@@ -21,8 +21,12 @@ services:
 
       # Usage reporting to the maintainers' trace service (startup and
       # backup-completed events, nothing about what is backed up).
-      # Set USAGE_REPORTING_ENABLED=false to turn it off; see CONFIG.md
+      # Set USAGE_REPORTING_ENABLED=false or TRACE_USAGE_REPORTING=off to turn
+      # it off (DO_NOT_TRACK=1 too); see CONFIG.md and
+      # https://github.com/Stephenson-Software/trace#usage-reporting
       - USAGE_REPORTING_ENABLED=${USAGE_REPORTING_ENABLED:-true}
+      - TRACE_USAGE_REPORTING=${TRACE_USAGE_REPORTING:-}
+      - DO_NOT_TRACK=${DO_NOT_TRACK:-}
     volumes:
       # Mount a local directory to persist backups
       - ./backups:/backups

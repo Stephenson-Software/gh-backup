@@ -28,10 +28,14 @@ import java.util.Collections;
  * <p>Reporting is on by default and switched off with
  * {@code usage.reporting.enabled=false} (as a {@code -D} system property, in
  * {@code application.properties}, or as {@code USAGE_REPORTING_ENABLED=false}
- * in the environment). The first time reporting runs on a machine, one
- * notice is logged saying so; a marker file under the user's config directory
- * ({@code ~/.config/gh-backup/}) keeps it from being repeated. gh-backup has
- * no settings file of its own, which is why a marker file is used.
+ * in the environment), or with the environment variables every trace client
+ * honours, {@code TRACE_USAGE_REPORTING=off} and {@code DO_NOT_TRACK=1}, which
+ * the client checks before anything this service passes it. The first time
+ * reporting runs on a machine, one notice is logged saying so; a marker file
+ * under the user's config directory ({@code ~/.config/gh-backup/}) keeps it
+ * from being repeated. gh-backup has no settings file of its own, which is why
+ * a marker file is used. Details:
+ * https://github.com/Stephenson-Software/trace#usage-reporting
  *
  * <p>Every path through this class is exception-safe: a bad endpoint, an
  * unwritable home directory or an unreachable trace server leave the backup
@@ -47,6 +51,8 @@ public class UsageReportingService {
     static final String STARTUP_EVENT = "startup";
     static final String BACKUP_COMPLETED_EVENT = "backup-completed";
     static final String NOTICE_MARKER_FILE = "usage-reporting-notice-shown";
+    /** The public page describing what trace collects and every way to turn it off. */
+    static final String DETAILS_URL = "https://github.com/Stephenson-Software/trace#usage-reporting";
 
     private final TraceClient client;
     private final String version;
@@ -135,9 +141,11 @@ public class UsageReportingService {
             if (Files.exists(noticeMarker)) {
                 return;
             }
-            log.info("Usage reporting is on: gh-backup sends a startup event (program name and version only) "
-                    + "and a backup-completed event (nothing else) to trace.danielstephenson.dev. "
-                    + "Turn it off with -Dusage.reporting.enabled=false or USAGE_REPORTING_ENABLED=false.");
+            log.info("Usage reporting is on: gh-backup sends its name and version (a startup event) and a "
+                    + "backup-completed event (nothing else) to https://trace.danielstephenson.dev - nothing "
+                    + "about accounts, repositories or this machine. Turn it off with "
+                    + "-Dusage.reporting.enabled=false, USAGE_REPORTING_ENABLED=false or "
+                    + "TRACE_USAGE_REPORTING=off. Details: " + DETAILS_URL);
             Files.createDirectories(noticeMarker.getParent());
             Files.writeString(noticeMarker, "The usage-reporting notice was shown once; delete this file to see it again.\n");
         } catch (IOException | RuntimeException cannotPersist) {
