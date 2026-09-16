@@ -28,10 +28,6 @@ gh-backup is a Spring Boot tool for backing up public GitHub repositories for sp
 - [Commands Reference](COMMANDS.md) – Complete list of all CLI commands and options
 - [Configuration Guide](CONFIG.md) – Detailed configuration options
 
-### Usage reporting
-
-gh-backup reports that it was used to the maintainers' [trace](https://github.com/Stephenson-Software/trace) service: a `startup` event carrying the program name and version, and a `backup-completed` event carrying nothing else. Nothing about the users, organizations or repositories being backed up is sent. It is on by default, a one-line notice is logged the first time it runs, and it is turned off with `-Dusage.reporting.enabled=false` (or `USAGE_REPORTING_ENABLED=false` in the environment). See [`usage.reporting.enabled`](CONFIG.md#usagereportingenabled) in the Configuration Guide.
-
 ## Support
 
 You can find the support Discord server [here](https://discord.gg/xXtuAQ2).
@@ -41,6 +37,19 @@ You can find the support Discord server [here](https://discord.gg/xXtuAQ2).
 Please fill out a bug report [here](https://github.com/Stephenson-Software/gh-backup/issues/new).
 
 - [Known Bugs](https://github.com/Stephenson-Software/gh-backup/issues?q=is%3Aissue+is%3Aopen+label%3Abug)
+
+## Usage reporting
+
+Usage reporting is on by default: gh-backup reports that it was used to the maintainers' [trace](https://github.com/Stephenson-Software/trace) service at `https://trace.danielstephenson.dev`, sending a `startup` event carrying its name and version once per process, and a `backup-completed` event carrying nothing else when a backup run finishes. Nothing else is sent: nothing about the users, organizations or repositories being backed up, and no usernames, hostnames, IP addresses, paths or command-line arguments. A one-line notice is logged the first time it runs on a machine (recorded in `~/.config/gh-backup/usage-reporting-notice-shown`).
+
+To turn it off, any one of these is enough:
+
+- `java -Dusage.reporting.enabled=false -jar ...` (or `usage.reporting.enabled=false` in an `application.properties` next to the JAR)
+- `USAGE_REPORTING_ENABLED=false` in the environment (`.env` for the Docker daemon)
+- `TRACE_USAGE_REPORTING=off` (also `false`, `0`, `no`) in the environment — the switch every trace client honours, checked before gh-backup's own setting
+- `DO_NOT_TRACK=1` (also `true`, `yes`) in the environment, per [consoledonottrack.com](https://consoledonottrack.com)
+
+See [`usage.reporting.enabled`](CONFIG.md#usagereportingenabled) in the Configuration Guide, and for what trace collects and why: https://github.com/Stephenson-Software/trace#usage-reporting
 
 ## Contributing
 

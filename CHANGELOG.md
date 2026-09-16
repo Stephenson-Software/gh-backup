@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- The vendored `TraceClient` is now trace-client-java 0.2.0, which honours `TRACE_USAGE_REPORTING=off` and `DO_NOT_TRACK=1` in the environment before anything gh-backup passes it and can say why reporting is off; the first-run notice now names `TRACE_USAGE_REPORTING=off` and links to https://github.com/Stephenson-Software/trace#usage-reporting, and `README.md`, `CONFIG.md`, `.env.example` and `docker-compose.yml` document both variables alongside `USAGE_REPORTING_ENABLED`
 - CI now pins `actions/checkout@v5` and `actions/setup-java@v5` in both `.github/workflows/build.yml` and `.github/workflows/release.yml`, replacing the `v4` pins that GitHub has deprecated along with the Node.js 20 runtime they target
 
 ### Fixed

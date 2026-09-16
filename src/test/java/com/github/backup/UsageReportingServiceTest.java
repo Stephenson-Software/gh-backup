@@ -74,7 +74,7 @@ class UsageReportingServiceTest {
 
     private long noticesLogged() {
         return logAppender.list.stream()
-                .filter(event -> event.getFormattedMessage().startsWith("Usage reporting is on: gh-backup sends a startup event"))
+                .filter(event -> event.getFormattedMessage().startsWith("Usage reporting is on: gh-backup sends its name and version"))
                 .count();
     }
 
@@ -129,6 +129,8 @@ class UsageReportingServiceTest {
         String notice = logAppender.list.get(0).getFormattedMessage();
         assertTrue(notice.contains("trace.danielstephenson.dev"), notice);
         assertTrue(notice.contains("-Dusage.reporting.enabled=false"), notice);
+        assertTrue(notice.contains("TRACE_USAGE_REPORTING=off"), notice);
+        assertTrue(notice.contains("https://github.com/Stephenson-Software/trace#usage-reporting"), notice);
 
         UsageReportingService second = new UsageReportingService("true", endpoint(), "test-key", "2.0.0-TEST", marker());
         second.start();
