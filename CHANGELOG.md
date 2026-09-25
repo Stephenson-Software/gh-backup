@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- The Docker image no longer declares `ENV GITHUB_TOKEN=""`, which tripped the `SecretsUsedInArgOrEnv` Dockerfile build check reported by `docker/build-push-action@v7`; `GitHubService` treats an unset `GITHUB_TOKEN` exactly like an empty one (anonymous access), the token is still supplied at container start through `docker-compose.yml`/`.env`, and `CONFIG.md` now lists the image default as *(unset)*
 - Documentation accuracy: the `java -jar` examples in `README.md`, `USER_GUIDE.md` and `CONFIG.md` now name `target/gh-backup-2.0.0-SNAPSHOT-8-8-2026.jar`, the artifact the build actually produces, instead of the non-existent `target/gh-backup-1.0.0.jar`
 - The `Build` workflow no longer triggers on a `develop` branch, and `.github/copilot-instructions.md` no longer instructs contributors to branch from and open pull requests against `develop`; the repository has only ever had `main`, and `CONTRIBUTING.md` was corrected to match in an earlier change
 - `.github/copilot-instructions.md` now lists `application-daemon.properties` among the files under `src/main/resources/`, alongside `application.properties` and `application-web.properties`

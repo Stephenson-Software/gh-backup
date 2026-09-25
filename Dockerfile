@@ -22,7 +22,6 @@ RUN mkdir -p /backups
 
 # Set default environment variables
 ENV BACKUP_DIRECTORY=/backups
-ENV GITHUB_TOKEN=""
 ENV SCHEDULED_USERS=""
 ENV BACKUP_INTERVAL_MS=""
 
