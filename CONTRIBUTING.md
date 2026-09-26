@@ -77,6 +77,8 @@ sh docker-entrypoint-test.sh
 
 Both suites run in CI on every pull request.
 
+When you change `<version>` in `pom.xml`, also update every `gh-backup-<version>.jar` reference in `README.md`, `USER_GUIDE.md`, `CONFIG.md`, `COMMANDS.md` and `Dockerfile`. `DocumentationVersionTest` fails the build and lists each reference that still names another version.
+
 ## Questions
 
 Ask in the [Discord server](https://discord.gg/xXtuAQ2).
