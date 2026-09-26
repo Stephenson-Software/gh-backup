@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `TraceClient`, the [trace-client-java](https://github.com/Stephenson-Software/trace-client-java) client, vendored unmodified apart from its package line as `com.github.backup.trace.TraceClient` together with its tests
 - `BACKUP_INTERVAL_MS` environment variable for the Docker daemon image, mapped by `docker-entrypoint.sh` to `-Dbackup.scheduled.interval.ms`, so the backup interval can be configured from `.env`/`docker-compose.yml` without overriding the entrypoint
 - `docker-entrypoint-test.sh`, a shell test that runs `docker-entrypoint.sh` against a stub `java` and asserts the argument list built for each combination of `BACKUP_DIRECTORY`, `SCHEDULED_USERS` and `BACKUP_INTERVAL_MS`, including empty values and values containing spaces; it runs in the `docker-build` CI job, so entrypoint changes are no longer merged unexecuted
+- `DocumentationVersionTest`, which fails `mvn test` when a `gh-backup-<version>.jar` reference in `README.md`, `USER_GUIDE.md`, `CONFIG.md`, `COMMANDS.md` or `Dockerfile` does not match `<version>` in `pom.xml`, so a version bump can no longer leave some of them stale; `CONTRIBUTING.md` notes the check
 
 ### Changed
 
