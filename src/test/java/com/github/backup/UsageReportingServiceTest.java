@@ -92,7 +92,7 @@ class UsageReportingServiceTest {
     }
 
     @Test
-    void backupCompletedEventCarriesNothingElse() throws Exception {
+    void backupCompletedEventCarriesTheVersionOnly() throws Exception {
         UsageReportingService service = new UsageReportingService("true", endpoint(), "test-key", "2.0.0-TEST", marker());
         service.start();
         assertTrue(arrived.await(5, TimeUnit.SECONDS));
@@ -102,18 +102,18 @@ class UsageReportingServiceTest {
         assertTrue(arrived.await(5, TimeUnit.SECONDS), "backup-completed event should arrive");
         service.close();
 
-        assertEquals("{\"application\":\"gh-backup\",\"name\":\"backup-completed\"}", bodies.get(1));
+        assertEquals("{\"application\":\"gh-backup\",\"name\":\"backup-completed\",\"tags\":{\"version\":\"2.0.0-TEST\"}}", bodies.get(1));
     }
 
     @Test
-    void unfilteredVersionPlaceholderIsNotSentAsATag() throws Exception {
+    void unfilteredVersionPlaceholderIsSentAsUnknown() throws Exception {
         UsageReportingService service = new UsageReportingService("true", endpoint(), "test-key", "@project.version@", marker());
         service.start();
 
         assertTrue(arrived.await(5, TimeUnit.SECONDS));
         service.close();
 
-        assertEquals("{\"application\":\"gh-backup\",\"name\":\"startup\"}", bodies.get(0));
+        assertEquals("{\"application\":\"gh-backup\",\"name\":\"startup\",\"tags\":{\"version\":\"unknown\"}}", bodies.get(0));
     }
 
     @Test

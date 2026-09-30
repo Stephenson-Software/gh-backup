@@ -40,7 +40,7 @@ Please fill out a bug report [here](https://github.com/Stephenson-Software/gh-ba
 
 ## Usage reporting
 
-Usage reporting is on by default: gh-backup reports that it was used to the maintainers' [trace](https://github.com/Stephenson-Software/trace) service at `https://trace.danielstephenson.dev`, sending a `startup` event carrying its name and version once per process, and a `backup-completed` event carrying nothing else when a backup run finishes. Nothing else is sent: nothing about the users, organizations or repositories being backed up, and no usernames, hostnames, IP addresses, paths or command-line arguments. A one-line notice is logged the first time it runs on a machine (recorded in `~/.config/gh-backup/usage-reporting-notice-shown`).
+Usage reporting is on by default: gh-backup reports that it was used to the maintainers' [trace](https://github.com/Stephenson-Software/trace) service at `https://trace.danielstephenson.dev`, sending a `startup` event carrying its name and version once per process, and a `backup-completed` event carrying only the version when a backup run finishes. Nothing else is sent: nothing about the users, organizations or repositories being backed up, and no usernames, hostnames, IP addresses, paths or command-line arguments. A one-line notice is logged the first time it runs on a machine (recorded in `~/.config/gh-backup/usage-reporting-notice-shown`).
 
 To turn it off, any one of these is enough:
 
