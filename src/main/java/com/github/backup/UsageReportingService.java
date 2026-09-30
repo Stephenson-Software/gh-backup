@@ -13,16 +13,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 
 /**
  * Reports that gh-backup was used, to the trace service, and never gets in the
  * way of a backup.
  *
  * <p>Two events are sent, both off the calling thread through the vendored
- * {@link TraceClient}: {@code startup} once per process (tagged with the
- * program version only) and {@code backup-completed} when a backup run
- * finishes, with no tags at all. Nothing identifying is sent: no user or
+ * {@link TraceClient}: {@code startup} once per process and
+ * {@code backup-completed} when a backup run finishes, each tagged with the
+ * program version only. Nothing identifying is sent: no user or
  * organization names, no repository names, no counts, no paths, no hostnames.
  *
  * <p>Reporting is on by default and switched off with
@@ -53,9 +52,10 @@ public class UsageReportingService {
     static final String NOTICE_MARKER_FILE = "usage-reporting-notice-shown";
     /** The public page describing what trace collects and every way to turn it off. */
     static final String DETAILS_URL = "https://github.com/Stephenson-Software/trace#usage-reporting";
+    /** Sent as the version when the build did not supply one. */
+    static final String UNKNOWN_VERSION = "unknown";
 
     private final TraceClient client;
-    private final String version;
     private final Path noticeMarker;
 
     @Autowired
@@ -68,16 +68,24 @@ public class UsageReportingService {
     }
 
     UsageReportingService(String enabled, String endpoint, String key, String version, Path noticeMarker) {
-        this.client = buildClient(enabled, endpoint, key);
-        this.version = version;
+        this.client = buildClient(enabled, endpoint, key, versionOrUnknown(version));
         this.noticeMarker = noticeMarker;
     }
 
-    private static TraceClient buildClient(String enabled, String endpoint, String key) {
+    /**
+     * The program version sent with every event. An unfiltered "@project.version@" means the
+     * build did not run through Maven; that, or a blank value, is sent as "unknown".
+     */
+    static String versionOrUnknown(String version) {
+        String trimmed = version == null ? "" : version.trim();
+        return trimmed.isEmpty() || trimmed.startsWith("@") ? UNKNOWN_VERSION : trimmed;
+    }
+
+    private static TraceClient buildClient(String enabled, String endpoint, String key, String version) {
         // A blank value (an empty environment variable, say) means "default", i.e. on.
         boolean on = enabled == null || enabled.isBlank() || !"false".equalsIgnoreCase(enabled.trim());
         try {
-            return TraceClient.builder(endpoint, APPLICATION)
+            return TraceClient.builder(endpoint, APPLICATION, version)
                     .key(key)
                     .enabled(on)
                     .logger(java.util.logging.Logger.getLogger(UsageReportingService.class.getName()))
@@ -108,16 +116,10 @@ public class UsageReportingService {
             return;
         }
         showFirstRunNoticeOnce();
-        String tagged = version == null ? "" : version.trim();
-        // An unfiltered "@project.version@" means the build did not run through Maven; send no tag then.
-        if (tagged.isEmpty() || tagged.startsWith("@")) {
-            client.report(STARTUP_EVENT);
-        } else {
-            client.report(STARTUP_EVENT, null, Collections.singletonMap("version", tagged));
-        }
+        client.report(STARTUP_EVENT);
     }
 
-    /** Reports that a backup run finished. Carries nothing about what was backed up. */
+    /** Reports that a backup run finished. Carries the version only, nothing about what was backed up. */
     public void backupCompleted() {
         client.report(BACKUP_COMPLETED_EVENT);
     }
@@ -141,7 +143,7 @@ public class UsageReportingService {
             if (Files.exists(noticeMarker)) {
                 return;
             }
-            log.info("Usage reporting is on: gh-backup sends its name and version (a startup event) and a "
+            log.info("Usage reporting is on: gh-backup sends its name and version with a startup event and a "
                     + "backup-completed event (nothing else) to https://trace.danielstephenson.dev - nothing "
                     + "about accounts, repositories or this machine. Turn it off with "
                     + "-Dusage.reporting.enabled=false, USAGE_REPORTING_ENABLED=false or "
