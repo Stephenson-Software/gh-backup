@@ -1,6 +1,7 @@
 package com.github.backup;
 
 import com.github.backup.trace.TraceClient;
+import com.github.backup.trace.TraceInstallId;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
@@ -9,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -68,7 +70,7 @@ public class UsageReportingService {
     }
 
     UsageReportingService(String enabled, String endpoint, String key, String version, Path noticeMarker) {
-        this.client = buildClient(enabled, endpoint, key, versionOrUnknown(version));
+        this.client = buildClient(enabled, endpoint, key, versionOrUnknown(version), installIdFile(noticeMarker));
         this.noticeMarker = noticeMarker;
     }
 
@@ -81,13 +83,24 @@ public class UsageReportingService {
         return trimmed.isEmpty() || trimmed.startsWith("@") ? UNKNOWN_VERSION : trimmed;
     }
 
-    private static TraceClient buildClient(String enabled, String endpoint, String key, String version) {
+    /**
+     * The installation ID file, {@value TraceInstallId#FILE_NAME}, next to the notice marker in
+     * gh-backup's own directory ({@code ~/.config/gh-backup/}); null if there is no usable home.
+     */
+    static File installIdFile(Path noticeMarker) {
+        return noticeMarker == null ? null : noticeMarker.resolveSibling(TraceInstallId.FILE_NAME).toFile();
+    }
+
+    private static TraceClient buildClient(String enabled, String endpoint, String key, String version,
+                                           File installIdFile) {
         // A blank value (an empty environment variable, say) means "default", i.e. on.
         boolean on = enabled == null || enabled.isBlank() || !"false".equalsIgnoreCase(enabled.trim());
         try {
             return TraceClient.builder(endpoint, APPLICATION, version)
                     .key(key)
                     .enabled(on)
+                    .installId(TraceInstallId.fromEnvironment())
+                    .installIdFile(installIdFile)
                     .logger(java.util.logging.Logger.getLogger(UsageReportingService.class.getName()))
                     .build();
         } catch (RuntimeException badConfiguration) {
@@ -108,6 +121,11 @@ public class UsageReportingService {
     /** Whether events are actually sent. */
     public boolean isEnabled() {
         return client.isEnabled();
+    }
+
+    /** The random installation ID sent as the tag {@code install}, or null while reporting is off. */
+    public String installId() {
+        return client.installId();
     }
 
     @PostConstruct
@@ -143,9 +161,9 @@ public class UsageReportingService {
             if (Files.exists(noticeMarker)) {
                 return;
             }
-            log.info("Usage reporting is on: gh-backup sends its name and version with a startup event and a "
-                    + "backup-completed event (nothing else) to https://trace.danielstephenson.dev - nothing "
-                    + "about accounts, repositories or this machine. Turn it off with "
+            log.info("Usage reporting is on: gh-backup sends its name, version and a random installation ID "
+                    + "with a startup event and a backup-completed event (nothing else) to "
+                    + "https://trace.danielstephenson.dev - nothing about accounts or repositories. Turn it off with "
                     + "-Dusage.reporting.enabled=false, USAGE_REPORTING_ENABLED=false or "
                     + "TRACE_USAGE_REPORTING=off. Details: " + DETAILS_URL);
             Files.createDirectories(noticeMarker.getParent());

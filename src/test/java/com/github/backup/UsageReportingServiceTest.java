@@ -74,8 +74,20 @@ class UsageReportingServiceTest {
 
     private long noticesLogged() {
         return logAppender.list.stream()
-                .filter(event -> event.getFormattedMessage().startsWith("Usage reporting is on: gh-backup sends its name and version"))
+                .filter(event -> event.getFormattedMessage().startsWith("Usage reporting is on: gh-backup sends its name, version and a random installation ID"))
                 .count();
+    }
+
+    @Test
+    void carriesARandomInstallationIdOnlyWhileReportingIsOn() {
+        UsageReportingService on = new UsageReportingService("true", endpoint(), "test-key", "1.0", marker());
+        UsageReportingService off = new UsageReportingService("false", endpoint(), "test-key", "1.0", marker());
+
+        assertNotNull(on.installId(), "an enabled client carries a random installation ID");
+        assertNull(off.installId(), "a disabled client never makes up an ID");
+        assertTrue(Files.exists(marker().resolveSibling("trace-install-id")), "kept next to the notice marker");
+        on.close();
+        off.close();
     }
 
     @Test
@@ -87,7 +99,7 @@ class UsageReportingServiceTest {
         service.close();
 
         assertEquals(1, bodies.size());
-        assertEquals("{\"application\":\"gh-backup\",\"name\":\"startup\",\"tags\":{\"version\":\"2.0.0-TEST\"}}", bodies.get(0));
+        assertEquals("{\"application\":\"gh-backup\",\"name\":\"startup\",\"tags\":{\"version\":\"2.0.0-TEST\",\"install\":\"" + service.installId() + "\"}}", bodies.get(0));
         assertEquals("Bearer test-key", authorizations.get(0));
     }
 
@@ -102,7 +114,7 @@ class UsageReportingServiceTest {
         assertTrue(arrived.await(5, TimeUnit.SECONDS), "backup-completed event should arrive");
         service.close();
 
-        assertEquals("{\"application\":\"gh-backup\",\"name\":\"backup-completed\",\"tags\":{\"version\":\"2.0.0-TEST\"}}", bodies.get(1));
+        assertEquals("{\"application\":\"gh-backup\",\"name\":\"backup-completed\",\"tags\":{\"version\":\"2.0.0-TEST\",\"install\":\"" + service.installId() + "\"}}", bodies.get(1));
     }
 
     @Test
@@ -113,7 +125,7 @@ class UsageReportingServiceTest {
         assertTrue(arrived.await(5, TimeUnit.SECONDS));
         service.close();
 
-        assertEquals("{\"application\":\"gh-backup\",\"name\":\"startup\",\"tags\":{\"version\":\"unknown\"}}", bodies.get(0));
+        assertEquals("{\"application\":\"gh-backup\",\"name\":\"startup\",\"tags\":{\"version\":\"unknown\",\"install\":\"" + service.installId() + "\"}}", bodies.get(0));
     }
 
     @Test
