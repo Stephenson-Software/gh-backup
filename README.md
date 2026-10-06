@@ -40,7 +40,7 @@ Please fill out a bug report [here](https://github.com/Stephenson-Software/gh-ba
 
 ## Usage reporting
 
-Usage reporting is on by default: gh-backup reports that it was used to the maintainers' [trace](https://github.com/Stephenson-Software/trace) service at `https://trace.danielstephenson.dev`, sending a `startup` event carrying its name and version once per process, and a `backup-completed` event carrying only the version when a backup run finishes. Nothing else is sent: nothing about the users, organizations or repositories being backed up, and no usernames, hostnames, IP addresses, paths or command-line arguments. A one-line notice is logged the first time it runs on a machine (recorded in `~/.config/gh-backup/usage-reporting-notice-shown`).
+Usage reporting is on by default: gh-backup reports that it was used to the maintainers' [trace](https://danielstephenson.dev/usage-reporting) service at `https://trace.danielstephenson.dev`, sending a `startup` event carrying its name and version once per process, and a `backup-completed` event carrying only the version when a backup run finishes. Nothing else is sent: nothing about the users, organizations or repositories being backed up, and no usernames, hostnames, IP addresses, paths or command-line arguments. A one-line notice is logged the first time it runs on a machine (recorded in `~/.config/gh-backup/usage-reporting-notice-shown`).
 
 Every event also carries a random installation ID (the tag `install`), so installations can be counted rather than events. It is the value of `TRACE_INSTALL_ID` when that is set, and otherwise a random UUID written the first time reporting runs to `~/.config/gh-backup/trace-install-id`, next to the notice marker, and reused after that (in the Docker image that directory is inside the container, so a recreated container counts as a new installation unless `TRACE_INSTALL_ID` is set). It identifies no person, account, host or address. Delete the file to get a new one. Every opt-out below also stops it: when reporting is off, no ID is made up and the file is neither read nor written.
 
@@ -51,7 +51,7 @@ To turn it off, any one of these is enough:
 - `TRACE_USAGE_REPORTING=off` (also `false`, `0`, `no`) in the environment — the switch every trace client honours, checked before gh-backup's own setting
 - `DO_NOT_TRACK=1` (also `true`, `yes`) in the environment, per [consoledonottrack.com](https://consoledonottrack.com)
 
-See [`usage.reporting.enabled`](CONFIG.md#usagereportingenabled) in the Configuration Guide, and for what trace collects and why: https://github.com/Stephenson-Software/trace#usage-reporting
+See [`usage.reporting.enabled`](CONFIG.md#usagereportingenabled) in the Configuration Guide, and for what trace collects and why: https://danielstephenson.dev/usage-reporting
 
 ## Contributing
 

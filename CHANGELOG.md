@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- The usage-reporting "Details" link (startup notice, docs and config comments) now points at https://danielstephenson.dev/usage-reporting, a public page, instead of a link into a private repository that answered 404. The vendored `TraceClient` is trace-client-java 0.6.1, whose server-wide switch file comment carries the same link.
 - The vendored `TraceClient` is now trace-client-java 0.2.0, which honours `TRACE_USAGE_REPORTING=off` and `DO_NOT_TRACK=1` in the environment before anything gh-backup passes it and can say why reporting is off; the first-run notice now names `TRACE_USAGE_REPORTING=off` and links to https://github.com/Stephenson-Software/trace#usage-reporting, and `README.md`, `CONFIG.md`, `.env.example` and `docker-compose.yml` document both variables alongside `USAGE_REPORTING_ENABLED`
 - CI now pins `actions/checkout@v5` and `actions/setup-java@v5` in both `.github/workflows/build.yml` and `.github/workflows/release.yml`, replacing the `v4` pins that GitHub has deprecated along with the Node.js 20 runtime they target
 - The `docker-build` CI job now pins `docker/setup-buildx-action@v4` and `docker/build-push-action@v7`, the current major of each and the first to declare `node24`, replacing the `v3` and `v5` pins that were the last actions in `.github/workflows/build.yml` still running on the deprecated Node.js 20 runtime

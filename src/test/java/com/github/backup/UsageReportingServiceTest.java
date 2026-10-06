@@ -142,7 +142,7 @@ class UsageReportingServiceTest {
         assertTrue(notice.contains("trace.danielstephenson.dev"), notice);
         assertTrue(notice.contains("-Dusage.reporting.enabled=false"), notice);
         assertTrue(notice.contains("TRACE_USAGE_REPORTING=off"), notice);
-        assertTrue(notice.contains("https://github.com/Stephenson-Software/trace#usage-reporting"), notice);
+        assertTrue(notice.contains("https://danielstephenson.dev/usage-reporting"), notice);
 
         UsageReportingService second = new UsageReportingService("true", endpoint(), "test-key", "2.0.0-TEST", marker());
         second.start();

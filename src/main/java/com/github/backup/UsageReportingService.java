@@ -36,7 +36,7 @@ import java.nio.file.Paths;
  * under the user's config directory ({@code ~/.config/gh-backup/}) keeps it
  * from being repeated. gh-backup has no settings file of its own, which is why
  * a marker file is used. Details:
- * https://github.com/Stephenson-Software/trace#usage-reporting
+ * https://danielstephenson.dev/usage-reporting
  *
  * <p>Every path through this class is exception-safe: a bad endpoint, an
  * unwritable home directory or an unreachable trace server leave the backup
@@ -53,7 +53,7 @@ public class UsageReportingService {
     static final String BACKUP_COMPLETED_EVENT = "backup-completed";
     static final String NOTICE_MARKER_FILE = "usage-reporting-notice-shown";
     /** The public page describing what trace collects and every way to turn it off. */
-    static final String DETAILS_URL = "https://github.com/Stephenson-Software/trace#usage-reporting";
+    static final String DETAILS_URL = "https://danielstephenson.dev/usage-reporting";
     /** Sent as the version when the build did not supply one. */
     static final String UNKNOWN_VERSION = "unknown";
 
