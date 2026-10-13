@@ -25,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- `docker-compose.yml` now passes `TRACE_INSTALL_ID` through to the container and `.env.example` lists it, so an installation ID set in `.env` is no longer silently ignored and a recreated container is no longer counted as a new installation when one is set
 - The Docker image no longer declares `ENV GITHUB_TOKEN=""`, which tripped the `SecretsUsedInArgOrEnv` Dockerfile build check reported by `docker/build-push-action@v7`; `GitHubService` treats an unset `GITHUB_TOKEN` exactly like an empty one (anonymous access), the token is still supplied at container start through `docker-compose.yml`/`.env`, and `CONFIG.md` now lists the image default as *(unset)*
 - Documentation accuracy: `CONFIG.md`'s `usage.reporting.enabled` entry and the `.env.example` comment no longer say the `startup` event carries only the version and `backup-completed` carries no tags; both describe the `version` and `install` tags every event carries, and `CONFIG.md` documents `TRACE_INSTALL_ID` and the `~/.config/gh-backup/trace-install-id` file, including in its Docker environment variable table
 - Documentation accuracy: the `java -jar` examples in `README.md`, `USER_GUIDE.md` and `CONFIG.md` now name `target/gh-backup-2.0.0-SNAPSHOT-8-8-2026.jar`, the artifact the build actually produces, instead of the non-existent `target/gh-backup-1.0.0.jar`

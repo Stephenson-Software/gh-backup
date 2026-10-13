@@ -27,6 +27,10 @@ services:
       - USAGE_REPORTING_ENABLED=${USAGE_REPORTING_ENABLED:-true}
       - TRACE_USAGE_REPORTING=${TRACE_USAGE_REPORTING:-}
       - DO_NOT_TRACK=${DO_NOT_TRACK:-}
+
+      # Optional: pins the installation ID sent as the 'install' tag, so a
+      # recreated container is not counted as a new installation
+      - TRACE_INSTALL_ID=${TRACE_INSTALL_ID:-}
     volumes:
       # Mount a local directory to persist backups
       - ./backups:/backups
