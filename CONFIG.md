@@ -194,7 +194,7 @@ When the image built from the included `Dockerfile` is used, the container alway
 | `DO_NOT_TRACK` | *(read directly by the vendored trace client)* | *(unset)* | `1` (or `true`, `yes`) stops reporting too, per https://consoledonottrack.com. |
 | `TRACE_INSTALL_ID` | *(read directly by the application)* | *(unset)* | Pins the installation ID sent as the `install` tag. When unset, the ID file is kept inside the container, so a recreated container counts as a new installation. |
 
-Of these, `GITHUB_TOKEN`, `SCHEDULED_USERS`, `BACKUP_INTERVAL_MS`, `USAGE_REPORTING_ENABLED`, `TRACE_USAGE_REPORTING` and `DO_NOT_TRACK` are wired through to a `.env` file by the included `docker-compose.yml` (see `.env.example`); that file pins `BACKUP_DIRECTORY` to `/backups` and mounts the host's `./backups` directory there so backups persist outside the container.
+Of these, `GITHUB_TOKEN`, `SCHEDULED_USERS`, `BACKUP_INTERVAL_MS`, `USAGE_REPORTING_ENABLED`, `TRACE_USAGE_REPORTING`, `DO_NOT_TRACK` and `TRACE_INSTALL_ID` are wired through to a `.env` file by the included `docker-compose.yml` (see `.env.example`); that file pins `BACKUP_DIRECTORY` to `/backups` and mounts the host's `./backups` directory there so backups persist outside the container.
 
 **Example `.env`:**
 ```
@@ -204,4 +204,5 @@ BACKUP_INTERVAL_MS=3600000
 USAGE_REPORTING_ENABLED=true
 TRACE_USAGE_REPORTING=
 DO_NOT_TRACK=
+TRACE_INSTALL_ID=
 ```
