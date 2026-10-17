@@ -96,6 +96,8 @@ Available interactive commands:
 | `exit` | Quit the interactive session |
 | `quit` | Alias for `exit` |
 
+Ending standard input (Ctrl-D on Linux/macOS, Ctrl-Z then Enter on Windows) also quits the session, as does reaching the end of piped input — for example, `printf 'status\n' | java -jar target/gh-backup-2.0.0-SNAPSHOT-8-8-2026.jar -i` prints the status and exits.
+
 ### Example interactive session
 
 ```

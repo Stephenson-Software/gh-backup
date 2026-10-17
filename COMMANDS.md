@@ -42,7 +42,7 @@ Once in interactive mode, the following commands are available at the `>` prompt
 | `exit` | Exit interactive mode and terminate the application |
 | `quit` | Alias for `exit` (accepted at the prompt, but not listed by `help`) |
 
-Commands are matched case-insensitively. An unrecognized command prints an error and returns to the prompt.
+Commands are matched case-insensitively. An unrecognized command prints an error and returns to the prompt. Reaching the end of standard input (Ctrl-D on Linux/macOS, Ctrl-Z then Enter on Windows, or the end of piped input) ends the session the same way as `exit`.
 
 ## JVM System Properties
 

@@ -72,6 +72,13 @@ public class BackupCommandLineRunner implements CommandLineRunner {
         while (running) {
             System.out.print("> ");
 
+            if (!scanner.hasNextLine()) {
+                // End of input (Ctrl-D, Ctrl-Z, or a piped file without exit) ends the session like exit
+                System.out.println();
+                System.out.println("Exiting interactive mode...");
+                break;
+            }
+
             String input = scanner.nextLine().trim();
 
             if (input.isEmpty()) {
