@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
-import java.util.NoSuchElementException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -285,12 +284,21 @@ class BackupCommandLineRunnerTest {
     }
 
     @Test
-    void testRun_InteractiveMode_EndOfInputWithoutExit() {
-        // Characterizes current behavior: end of input before exit/quit (Ctrl-D, a piped
-        // file without exit) escapes run() as NoSuchElementException. Tracked in #36.
+    void testRun_InteractiveMode_EndOfInputWithoutExit() throws Exception {
+        // End of input before exit/quit (Ctrl-D, a piped file without exit) ends the session like exit (#36)
         provideInput("status\n");
 
-        assertThrows(NoSuchElementException.class, () -> runner.run("-i"));
+        assertDoesNotThrow(() -> runner.run("-i"));
         verify(backupService).showBackupStatus();
+        assertTrue(stdout().contains("Exiting interactive mode..."));
+    }
+
+    @Test
+    void testRun_InteractiveMode_EmptyInput() throws Exception {
+        provideInput("");
+
+        assertDoesNotThrow(() -> runner.run("-i"));
+        assertTrue(stdout().contains("Exiting interactive mode..."));
+        verifyNoInteractions(backupService, usageReporting);
     }
 }
