@@ -1,5 +1,13 @@
 # gh-backup
 
+![gh-backup interactive mode backing up the octocat demo account, then showing its status](docs/images/gh-backup-interactive.gif)
+
+*A real interactive session backing up GitHub's public `octocat` demo account (8 repositories).*
+
+![The status command after the backup: 8 octocat repositories with their last-updated times](docs/images/gh-backup-status.png)
+
+*The `status` command after that backup.*
+
 ## Description
 
 gh-backup is a Spring Boot tool for backing up public GitHub repositories for specified users or organizations. It is available as a command-line tool, a web application, and a daemon that runs scheduled backups automatically (with Docker support).
@@ -146,6 +154,10 @@ See [CONFIG.md](CONFIG.md) for the full list of daemon configuration options.
 | Name | Main Contributions |
 |------|--------------------|
 | dmccoystephenson | Initial development and maintenance |
+
+## How the screenshots were captured
+
+`docs/images/gh-backup-interactive.gif` and `docs/images/gh-backup-status.png` were recorded on 2026-10-18 from a real run of the JAR built with `mvn package`, started with the exact command shown in the GIF, against GitHub's public `octocat` demo account. No GitHub token was set, so only public repositories could be listed, and `TRACE_USAGE_REPORTING=off` was set so that no usage reports were sent. The commands were typed into a pseudo-terminal by a script, and the recorded terminal output was rendered to an image with [pyte](https://github.com/selectel/pyte) and [Pillow](https://python-pillow.org/). Nothing in the output was edited; only the window frame was added. Pauses longer than 1.5 seconds were shortened in the GIF, and the PNG is the last 17 lines of the same run.
 
 ## License
 
