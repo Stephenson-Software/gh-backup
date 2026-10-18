@@ -61,6 +61,84 @@ class BackupControllerTest {
                 .andExpect(jsonPath("$.message").value("Error: Test error"));
 
         verify(backupService, times(1)).backupUserRepositories("testuser");
+        verify(usageReporting, never()).backupCompleted();
+    }
+
+    @Test
+    void createBackup_Success_ReportsBackupCompleted() throws Exception {
+        mockMvc.perform(post("/api/backups")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"userOrOrg\":\"testuser\"}"))
+                .andExpect(status().isOk());
+
+        verify(usageReporting, times(1)).backupCompleted();
+    }
+
+    @Test
+    void createBackup_MissingUserOrOrg() throws Exception {
+        assertRejected("{}");
+    }
+
+    @Test
+    void createBackup_BlankUserOrOrg() throws Exception {
+        assertRejected("{\"userOrOrg\":\"   \"}");
+    }
+
+    @Test
+    void createBackup_LeadingHyphen() throws Exception {
+        assertRejected("{\"userOrOrg\":\"-octocat\"}");
+    }
+
+    @Test
+    void createBackup_TrailingHyphen() throws Exception {
+        assertRejected("{\"userOrOrg\":\"octocat-\"}");
+    }
+
+    @Test
+    void createBackup_ConsecutiveHyphens() throws Exception {
+        assertRejected("{\"userOrOrg\":\"octo--cat\"}");
+    }
+
+    @Test
+    void createBackup_InvalidCharacters() throws Exception {
+        assertRejected("{\"userOrOrg\":\"../etc\"}");
+    }
+
+    @Test
+    void createBackup_NameTooLong() throws Exception {
+        assertRejected("{\"userOrOrg\":\"" + "a".repeat(40) + "\"}");
+    }
+
+    @Test
+    void createBackup_MaximumLengthName() throws Exception {
+        String name = "a".repeat(39);
+
+        mockMvc.perform(post("/api/backups")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"userOrOrg\":\"" + name + "\"}"))
+                .andExpect(status().isOk());
+
+        verify(backupService, times(1)).backupUserRepositories(name);
+    }
+
+    @Test
+    void createBackup_SingleHyphenBetweenCharacters() throws Exception {
+        mockMvc.perform(post("/api/backups")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"userOrOrg\":\"spring-projects\"}"))
+                .andExpect(status().isOk());
+
+        verify(backupService, times(1)).backupUserRepositories("spring-projects");
+    }
+
+    private void assertRejected(String body) throws Exception {
+        mockMvc.perform(post("/api/backups")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+                .andExpect(status().isBadRequest());
+
+        verify(backupService, never()).backupUserRepositories(anyString());
+        verify(usageReporting, never()).backupCompleted();
     }
 
     @Test
