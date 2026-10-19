@@ -25,6 +25,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -288,6 +289,71 @@ class BackupServiceTest {
         assertTrue(output.contains("user2/ (1 repositories)"), output);
         assertTrue(output.contains("  - repo3 (last updated: "), output);
         assertTrue(output.contains("Total: 2 users/organizations, 3 repositories"), output);
+    }
+
+    @Test
+    void testSimpleProgressMonitor_LineMode_EachTaskOnItsOwnLine() {
+        AtomicLong clock = new AtomicLong();
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        BackupService.SimpleProgressMonitor monitor = new BackupService.SimpleProgressMonitor(
+                new PrintStream(buffer, true, StandardCharsets.UTF_8), false, clock::get);
+
+        // Remote tasks are never ended by JGit; the next beginTask finishes them
+        monitor.beginTask("remote: Enumerating objects", 0);
+        monitor.beginTask("remote: Counting objects", 10);
+        clock.addAndGet(BackupService.SimpleProgressMonitor.UPDATE_INTERVAL_MS);
+        monitor.update(5);
+        monitor.beginTask("Receiving objects", 4);
+        monitor.endTask();
+
+        String nl = System.lineSeparator();
+        assertEquals("  remote: Enumerating objects..." + nl
+                + "  remote: Counting objects: 0%" + nl
+                + "  remote: Counting objects: 50%" + nl
+                + "  Receiving objects: 0%" + nl
+                + "  Receiving objects: 100%" + nl,
+                buffer.toString(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void testSimpleProgressMonitor_OverwriteMode_UnendedTaskEndsItsLine() {
+        AtomicLong clock = new AtomicLong();
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        BackupService.SimpleProgressMonitor monitor = new BackupService.SimpleProgressMonitor(
+                new PrintStream(buffer, true, StandardCharsets.UTF_8), true, clock::get);
+
+        monitor.beginTask("remote: Counting objects", 10);
+        clock.addAndGet(BackupService.SimpleProgressMonitor.UPDATE_INTERVAL_MS);
+        monitor.update(5);
+        monitor.beginTask("Receiving objects", 0);
+        monitor.endTask();
+
+        String nl = System.lineSeparator();
+        assertEquals("  remote: Counting objects: 0%\r  remote: Counting objects: 50%" + nl
+                + "  Receiving objects..." + nl,
+                buffer.toString(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void testSimpleProgressMonitor_PrintsPercentageOnlyWhenItChanges() {
+        AtomicLong clock = new AtomicLong();
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        BackupService.SimpleProgressMonitor monitor = new BackupService.SimpleProgressMonitor(
+                new PrintStream(buffer, true, StandardCharsets.UTF_8), false, clock::get);
+
+        monitor.beginTask("Resolving deltas", 100);
+        monitor.update(10); // throttled: within the update interval
+        clock.addAndGet(BackupService.SimpleProgressMonitor.UPDATE_INTERVAL_MS);
+        monitor.update(10);
+        clock.addAndGet(BackupService.SimpleProgressMonitor.UPDATE_INTERVAL_MS);
+        monitor.update(0);
+        monitor.endTask();
+
+        String nl = System.lineSeparator();
+        assertEquals("  Resolving deltas: 0%" + nl
+                + "  Resolving deltas: 20%" + nl
+                + "  Resolving deltas: 100%" + nl,
+                buffer.toString(StandardCharsets.UTF_8));
     }
 
     private Path createSourceRepository(String name) throws Exception {
