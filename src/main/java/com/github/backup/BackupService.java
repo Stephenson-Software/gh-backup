@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -20,6 +21,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.LongSupplier;
 
 @Service
 public class BackupService {
@@ -167,7 +169,7 @@ public class BackupService {
             try (Git git = Git.open(localPath)) {
                 System.out.println(" (repository exists, updating)");
                 git.fetch()
-                        .setProgressMonitor(new SimpleProgressMonitor())
+                        .setProgressMonitor(SimpleProgressMonitor.forConsole())
                         .call();
                 System.out.println("  ✓ Updated successfully");
             } catch (IOException e) {
@@ -180,7 +182,7 @@ public class BackupService {
             try (Git git = Git.cloneRepository()
                     .setURI(repo.getHttpTransportUrl())
                     .setDirectory(localPath)
-                    .setProgressMonitor(new SimpleProgressMonitor())
+                    .setProgressMonitor(SimpleProgressMonitor.forConsole())
                     .call()) {
                 System.out.println("  ✓ Cloned successfully");
             }
@@ -188,14 +190,43 @@ public class BackupService {
     }
 
     /**
-     * Simple progress monitor that shows cloning progress
+     * Progress monitor that shows clone and fetch progress, one line per task.
+     *
+     * <p>JGit does not call {@link #endTask()} for progress reported by the remote
+     * (the {@code remote: ...} tasks), so a task still in progress is finished off
+     * when the next one begins. In overwrite mode each update rewrites the current
+     * line; otherwise each update is printed on its own line. A percentage is only
+     * printed when it changes.
      */
-    private static class SimpleProgressMonitor implements ProgressMonitor {
+    static class SimpleProgressMonitor implements ProgressMonitor {
+
+        static final long UPDATE_INTERVAL_MS = 500;
+
+        private final PrintStream out;
+        private final boolean overwrite;
+        private final LongSupplier clock;
+
         private String currentTask;
         private int totalWork;
         private int completed;
+        private int lastPercentage;
+        private boolean printed;
         private long lastUpdateTime;
-        private static final long UPDATE_INTERVAL_MS = 500; // Update every 500ms
+
+        SimpleProgressMonitor(PrintStream out, boolean overwrite, LongSupplier clock) {
+            this.out = out;
+            this.overwrite = overwrite;
+            this.clock = clock;
+        }
+
+        /**
+         * Creates a monitor writing to standard output, with the rendering mode
+         * taken from the {@code backup.progress.overwrite} system property.
+         */
+        static SimpleProgressMonitor forConsole() {
+            boolean overwrite = Boolean.parseBoolean(System.getProperty("backup.progress.overwrite", "true"));
+            return new SimpleProgressMonitor(System.out, overwrite, System::currentTimeMillis);
+        }
 
         @Override
         public void start(int totalTasks) {
@@ -204,22 +235,29 @@ public class BackupService {
 
         @Override
         public void beginTask(String title, int totalWork) {
+            finishTask(false);
             this.currentTask = title;
             this.totalWork = totalWork;
             this.completed = 0;
-            this.lastUpdateTime = System.currentTimeMillis();
+            this.lastUpdateTime = clock.getAsLong();
+            this.printed = false;
             if (totalWork > 0) {
-                System.out.print("  " + title + ": 0%");
+                print(0);
+            } else if (overwrite) {
+                out.print("  " + title + "...");
             } else {
-                System.out.print("  " + title + "...");
+                out.println("  " + title + "...");
             }
         }
 
         @Override
         public void update(int completed) {
+            if (currentTask == null) {
+                return;
+            }
             this.completed += completed;
-            long currentTime = System.currentTimeMillis();
-            
+            long currentTime = clock.getAsLong();
+
             // Throttle updates to avoid too much output
             if (currentTime - lastUpdateTime < UPDATE_INTERVAL_MS) {
                 return;
@@ -227,31 +265,13 @@ public class BackupService {
             lastUpdateTime = currentTime;
 
             if (totalWork > 0 && this.completed < totalWork) {
-                int percentage = (int) ((this.completed * 100.0) / totalWork);
-                boolean overwriteEnabled = Boolean.parseBoolean(
-                        System.getProperty("backup.progress.overwrite", "true"));
-                if (overwriteEnabled) {
-                    System.out.print("\r  " + currentTask + ": " + percentage + "%");
-                } else {
-                    System.out.println("  " + currentTask + ": " + percentage + "%");
-                }
+                print(percentage());
             }
         }
 
         @Override
         public void endTask() {
-            boolean overwriteEnabled = Boolean.parseBoolean(
-                    System.getProperty("backup.progress.overwrite", "true"));
-            if (totalWork > 0) {
-                if (overwriteEnabled) {
-                    System.out.print("\r  " + currentTask + ": 100%");
-                } else {
-                    System.out.println("  " + currentTask + ": 100%");
-                }
-            }
-            if (overwriteEnabled) {
-                System.out.println();
-            }
+            finishTask(true);
         }
 
         @Override
@@ -263,6 +283,44 @@ public class BackupService {
         public void showDuration(boolean enabled) {
             // Controls whether the monitor should display operation duration
             // Not implemented in this basic progress monitor
+        }
+
+        /**
+         * Prints the final value of the task in progress, if any, and ends its line.
+         * A task ended by JGit is complete; one ended only because the next task
+         * began shows the last progress it reported.
+         */
+        private void finishTask(boolean complete) {
+            if (currentTask == null) {
+                return;
+            }
+            if (totalWork > 0) {
+                print(complete ? 100 : percentage());
+            }
+            if (overwrite) {
+                out.println();
+            }
+            currentTask = null;
+        }
+
+        private int percentage() {
+            return (int) Math.min(100, (completed * 100L) / totalWork);
+        }
+
+        private void print(int percentage) {
+            String line = "  " + currentTask + ": " + percentage + "%";
+            if (printed && percentage == lastPercentage) {
+                return;
+            }
+            if (!overwrite) {
+                out.println(line);
+            } else if (printed) {
+                out.print("\r" + line);
+            } else {
+                out.print(line);
+            }
+            lastPercentage = percentage;
+            printed = true;
         }
     }
 }
