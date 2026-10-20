@@ -356,6 +356,111 @@ class BackupServiceTest {
                 buffer.toString(StandardCharsets.UTF_8));
     }
 
+    @Test
+    void testSimpleProgressMonitor_ForConsole_OverwritesByDefault() {
+        String output = withProgressOverwriteProperty(null, () -> {
+            BackupService.SimpleProgressMonitor monitor = BackupService.SimpleProgressMonitor.forConsole();
+            monitor.beginTask("Receiving objects", 0);
+        });
+
+        // Overwrite mode leaves the line open for the next update
+        assertEquals("  Receiving objects...", output);
+    }
+
+    @Test
+    void testSimpleProgressMonitor_ForConsole_LineModeWhenPropertyFalse() {
+        String output = withProgressOverwriteProperty("false", () -> {
+            BackupService.SimpleProgressMonitor monitor = BackupService.SimpleProgressMonitor.forConsole();
+            monitor.beginTask("Receiving objects", 0);
+        });
+
+        assertEquals("  Receiving objects..." + System.lineSeparator(), output);
+    }
+
+    @Test
+    void testSimpleProgressMonitor_ForConsole_UnrecognizedValueMeansLineMode() {
+        String output = withProgressOverwriteProperty("yes", () -> {
+            BackupService.SimpleProgressMonitor monitor = BackupService.SimpleProgressMonitor.forConsole();
+            monitor.beginTask("Receiving objects", 0);
+        });
+
+        // Boolean.parseBoolean treats anything but "true" (ignoring case) as false
+        assertEquals("  Receiving objects..." + System.lineSeparator(), output);
+    }
+
+    @Test
+    void testSimpleProgressMonitor_UpdateAndEndTaskWithoutTaskAreIgnored() {
+        AtomicLong clock = new AtomicLong();
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        BackupService.SimpleProgressMonitor monitor = new BackupService.SimpleProgressMonitor(
+                new PrintStream(buffer, true, StandardCharsets.UTF_8), true, clock::get);
+
+        clock.addAndGet(BackupService.SimpleProgressMonitor.UPDATE_INTERVAL_MS);
+        monitor.update(5);
+        monitor.endTask();
+
+        assertEquals("", buffer.toString(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void testSimpleProgressMonitor_UpdateReachingTotalLeavesHundredPercentToEndTask() {
+        AtomicLong clock = new AtomicLong();
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        BackupService.SimpleProgressMonitor monitor = new BackupService.SimpleProgressMonitor(
+                new PrintStream(buffer, true, StandardCharsets.UTF_8), false, clock::get);
+
+        monitor.beginTask("Checking out files", 10);
+        clock.addAndGet(BackupService.SimpleProgressMonitor.UPDATE_INTERVAL_MS);
+        monitor.update(15); // overshoots totalWork
+        String beforeEnd = buffer.toString(StandardCharsets.UTF_8);
+        monitor.endTask();
+
+        String nl = System.lineSeparator();
+        assertEquals("  Checking out files: 0%" + nl, beforeEnd);
+        assertEquals("  Checking out files: 0%" + nl
+                + "  Checking out files: 100%" + nl,
+                buffer.toString(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void testSimpleProgressMonitor_OverwriteMode_UpdatesRewriteTheLine() {
+        AtomicLong clock = new AtomicLong();
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        BackupService.SimpleProgressMonitor monitor = new BackupService.SimpleProgressMonitor(
+                new PrintStream(buffer, true, StandardCharsets.UTF_8), true, clock::get);
+
+        monitor.beginTask("Receiving objects", 4);
+        clock.addAndGet(BackupService.SimpleProgressMonitor.UPDATE_INTERVAL_MS);
+        monitor.update(1);
+        clock.addAndGet(BackupService.SimpleProgressMonitor.UPDATE_INTERVAL_MS);
+        monitor.update(2);
+        monitor.endTask();
+
+        assertEquals("  Receiving objects: 0%"
+                + "\r  Receiving objects: 25%"
+                + "\r  Receiving objects: 75%"
+                + "\r  Receiving objects: 100%" + System.lineSeparator(),
+                buffer.toString(StandardCharsets.UTF_8));
+    }
+
+    private static String withProgressOverwriteProperty(String value, ThrowingRunnable action) {
+        String original = System.getProperty("backup.progress.overwrite");
+        if (value == null) {
+            System.clearProperty("backup.progress.overwrite");
+        } else {
+            System.setProperty("backup.progress.overwrite", value);
+        }
+        try {
+            return captureStdout(action);
+        } finally {
+            if (original == null) {
+                System.clearProperty("backup.progress.overwrite");
+            } else {
+                System.setProperty("backup.progress.overwrite", original);
+            }
+        }
+    }
+
     private Path createSourceRepository(String name) throws Exception {
         Path source = tempDir.resolve("sources").resolve(name);
         try (Git git = Git.init().setDirectory(source.toFile()).call()) {
