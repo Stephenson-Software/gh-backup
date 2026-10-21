@@ -2,8 +2,10 @@ package com.github.backup;
 
 import com.github.backup.web.BackupStatusResponse;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -87,6 +89,15 @@ class BackupServiceTest {
                 .thenReturn(Collections.singletonList(mockRepo1));
 
         backupService.backupUserRepositories("testuser");
+
+        // JGit runs auto-gc after a fetch on a background thread by default, which holds
+        // gc.log.lock and can race @TempDir cleanup; run it in the foreground instead
+        try (Git backupGit = Git.open(tempDir.resolve("testuser").resolve("repo1").toFile())) {
+            StoredConfig config = backupGit.getRepository().getConfig();
+            config.setBoolean(ConfigConstants.CONFIG_GC_SECTION, null,
+                    ConfigConstants.CONFIG_KEY_AUTODETACH, false);
+            config.save();
+        }
 
         String newCommit;
         String branch;
