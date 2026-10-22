@@ -77,7 +77,7 @@ java -Dspring.profiles.active=web -jar target/gh-backup-2.0.0-SNAPSHOT-8-8-2026.
 
 ### `-Dspring.profiles.active=daemon`
 
-**Description:** Start the application as a background daemon that runs scheduled backups automatically, instead of a CLI tool. Requires `backup.scheduled.users` to be set.  
+**Description:** Start the application as a background daemon that runs scheduled backups automatically, instead of a CLI tool. Set `backup.scheduled.users` as well: without it the daemon still starts, but logs a warning and performs no backups.  
 **Default:** CLI mode  
 **Example:**
 ```bash
