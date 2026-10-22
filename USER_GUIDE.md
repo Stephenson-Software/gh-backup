@@ -5,7 +5,7 @@
 - Java 17 or higher installed on your system
 - A GitHub personal access token (optional, but recommended for higher API rate limits)
 
-A separate Git installation is not needed: repositories are cloned and fetched with JGit, a Git implementation bundled in the JAR.
+A separate Git installation is not needed to run gh-backup: repositories are cloned and fetched with JGit, a Git implementation bundled in the JAR.
 
 ## First Steps
 
@@ -138,7 +138,7 @@ Repositories are organized by user or organization inside the backup directory:
     └── roadmap/
 ```
 
-Each subdirectory is a full Git repository. If a repository already exists on disk, running the tool again will update it with `git fetch`. A fetch downloads new commits and updates the remote-tracking branches (`origin/<branch>`), but does not move the local branch or change the checked-out files; run `git merge` or `git pull` inside the backup to bring its working tree up to date.
+Each subdirectory is a full Git repository. If a repository already exists on disk, running the tool again will update it with `git fetch`. A fetch downloads new commits and updates the remote-tracking branches (`origin/<branch>`), but does not move the local branch or change the checked-out files; to bring a backup's working tree up to date, run `git merge` or `git pull` inside it with any Git client.
 
 ## Rate Limits
 
