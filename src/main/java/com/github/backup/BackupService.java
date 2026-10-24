@@ -171,6 +171,11 @@ public class BackupService {
                 git.fetch()
                         .setProgressMonitor(SimpleProgressMonitor.forConsole())
                         .call();
+                // A fetch only writes inside .git/, so the directory's mtime, which the
+                // status reports as the last-updated time, has to be moved forward here
+                if (!localPath.setLastModified(System.currentTimeMillis())) {
+                    System.err.println("  Warning: could not record the update time for " + repoName);
+                }
                 System.out.println("  ✓ Updated successfully");
             } catch (IOException e) {
                 System.err.println("  ✗ Failed to update: " + e.getMessage());

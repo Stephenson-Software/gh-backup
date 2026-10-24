@@ -172,4 +172,6 @@ When running in web mode (`-Dspring.profiles.active=web`), the following REST en
 }
 ```
 
+`lastUpdated` is the time, in the server's local time zone, at which the repository was last cloned or successfully fetched; the `status` command reports the same value.
+
 When the backup directory does not exist yet, `200 OK` is still returned, with `totalUsers` and `totalRepositories` set to `0` and an empty `users` array. The same empty structure is returned with `500 Internal Server Error` if the status cannot be read.
