@@ -89,15 +89,7 @@ class BackupServiceTest {
                 .thenReturn(Collections.singletonList(mockRepo1));
 
         backupService.backupUserRepositories("testuser");
-
-        // JGit runs auto-gc after a fetch on a background thread by default, which holds
-        // gc.log.lock and can race @TempDir cleanup; run it in the foreground instead
-        try (Git backupGit = Git.open(tempDir.resolve("testuser").resolve("repo1").toFile())) {
-            StoredConfig config = backupGit.getRepository().getConfig();
-            config.setBoolean(ConfigConstants.CONFIG_GC_SECTION, null,
-                    ConfigConstants.CONFIG_KEY_AUTODETACH, false);
-            config.save();
-        }
+        disableBackgroundGc(tempDir.resolve("testuser").resolve("repo1"));
 
         String newCommit;
         String branch;
@@ -115,6 +107,39 @@ class BackupServiceTest {
             assertNotNull(remoteRef);
             assertEquals(newCommit, remoteRef.getObjectId().getName());
         }
+    }
+
+    @Test
+    void testBackupUserRepositories_FetchMovesLastUpdatedForward() throws Exception {
+        Path source = createSourceRepository("source-repo1");
+        when(mockRepo1.getName()).thenReturn("repo1");
+        when(mockRepo1.getHttpTransportUrl()).thenReturn(source.toUri().toString());
+        when(gitHubService.getPublicRepositories("testuser"))
+                .thenReturn(Collections.singletonList(mockRepo1));
+
+        backupService.backupUserRepositories("testuser");
+        Path repoDir = tempDir.resolve("testuser").resolve("repo1");
+        disableBackgroundGc(repoDir);
+        try (Git sourceGit = Git.open(source.toFile())) {
+            commitFile(sourceGit, "second.txt", "second");
+        }
+        long firstCloned = 1_700_000_000_000L;
+        assertTrue(repoDir.toFile().setLastModified(firstCloned));
+        String firstClonedStr = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+                .withZone(ZoneId.systemDefault())
+                .format(Instant.ofEpochMilli(firstCloned));
+
+        long beforeFetch = System.currentTimeMillis();
+        captureStdout(() -> backupService.backupUserRepositories("testuser"));
+
+        // Allow for filesystems that store modification times at one-second granularity
+        assertTrue(repoDir.toFile().lastModified() >= beforeFetch - 1000,
+                "last modified " + repoDir.toFile().lastModified() + " before fetch at " + beforeFetch);
+        String lastUpdated = backupService.getBackupStatusData().getUsers().get(0)
+                .getRepositories().get(0).getLastUpdated();
+        assertNotEquals(firstClonedStr, lastUpdated);
+        String status = captureStdout(backupService::showBackupStatus);
+        assertFalse(status.contains("repo1 (last updated: " + firstClonedStr + ")"), status);
     }
 
     @Test
@@ -469,6 +494,17 @@ class BackupServiceTest {
             } else {
                 System.setProperty("backup.progress.overwrite", original);
             }
+        }
+    }
+
+    // JGit runs auto-gc after a fetch on a background thread by default, which holds
+    // gc.log.lock and can race @TempDir cleanup; run it in the foreground instead
+    private static void disableBackgroundGc(Path repoDir) throws Exception {
+        try (Git git = Git.open(repoDir.toFile())) {
+            StoredConfig config = git.getRepository().getConfig();
+            config.setBoolean(ConfigConstants.CONFIG_GC_SECTION, null,
+                    ConfigConstants.CONFIG_KEY_AUTODETACH, false);
+            config.save();
         }
     }
 

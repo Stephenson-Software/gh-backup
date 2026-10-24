@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- The last-updated time reported by the `status` command and `GET /api/backups/status` now moves forward when a backup re-fetches an existing repository, instead of staying at the time it was first cloned: a fetch writes only inside `.git/`, so the repository directory's modification time, which is the value reported, is now set to the time of each successful fetch
 - Interactive mode now exits cleanly, as if `exit` had been typed, when standard input ends before `exit`/`quit` (Ctrl-D, Ctrl-Z, or piped input without `exit`), instead of failing the run with `NoSuchElementException: No line found`
 - Clone and fetch progress no longer runs together on one line: a `remote:` task, which JGit never ends, is finished on its own line when the next task begins; with `-Dbackup.progress.overwrite=false` the first percentage of a task now ends its line instead of being joined to the next update; and a percentage is printed only when it changes, so the same value no longer repeats
 - `docker-compose.yml` now passes `TRACE_INSTALL_ID` through to the container and `.env.example` lists it, so an installation ID set in `.env` is no longer silently ignored and a recreated container is no longer counted as a new installation when one is set
