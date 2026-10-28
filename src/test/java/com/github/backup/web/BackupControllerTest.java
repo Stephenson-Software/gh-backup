@@ -26,6 +26,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("web")
 class BackupControllerTest {
 
+    private static final String REQUIRED_MESSAGE = "User or organization name is required";
+    private static final String INVALID_FORMAT_MESSAGE = "Invalid GitHub username format";
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -76,37 +79,42 @@ class BackupControllerTest {
 
     @Test
     void createBackup_MissingUserOrOrg() throws Exception {
-        assertRejected("{}");
+        assertRejected("{}", REQUIRED_MESSAGE);
     }
 
     @Test
     void createBackup_BlankUserOrOrg() throws Exception {
-        assertRejected("{\"userOrOrg\":\"   \"}");
+        assertRejected("{\"userOrOrg\":\"   \"}", REQUIRED_MESSAGE);
+    }
+
+    @Test
+    void createBackup_EmptyUserOrOrg() throws Exception {
+        assertRejected("{\"userOrOrg\":\"\"}", REQUIRED_MESSAGE);
     }
 
     @Test
     void createBackup_LeadingHyphen() throws Exception {
-        assertRejected("{\"userOrOrg\":\"-octocat\"}");
+        assertRejected("{\"userOrOrg\":\"-octocat\"}", INVALID_FORMAT_MESSAGE);
     }
 
     @Test
     void createBackup_TrailingHyphen() throws Exception {
-        assertRejected("{\"userOrOrg\":\"octocat-\"}");
+        assertRejected("{\"userOrOrg\":\"octocat-\"}", INVALID_FORMAT_MESSAGE);
     }
 
     @Test
     void createBackup_ConsecutiveHyphens() throws Exception {
-        assertRejected("{\"userOrOrg\":\"octo--cat\"}");
+        assertRejected("{\"userOrOrg\":\"octo--cat\"}", INVALID_FORMAT_MESSAGE);
     }
 
     @Test
     void createBackup_InvalidCharacters() throws Exception {
-        assertRejected("{\"userOrOrg\":\"../etc\"}");
+        assertRejected("{\"userOrOrg\":\"../etc\"}", INVALID_FORMAT_MESSAGE);
     }
 
     @Test
     void createBackup_NameTooLong() throws Exception {
-        assertRejected("{\"userOrOrg\":\"" + "a".repeat(40) + "\"}");
+        assertRejected("{\"userOrOrg\":\"" + "a".repeat(40) + "\"}", INVALID_FORMAT_MESSAGE);
     }
 
     @Test
@@ -131,11 +139,13 @@ class BackupControllerTest {
         verify(backupService, times(1)).backupUserRepositories("spring-projects");
     }
 
-    private void assertRejected(String body) throws Exception {
+    private void assertRejected(String body, String expectedMessage) throws Exception {
         mockMvc.perform(post("/api/backups")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value(expectedMessage));
 
         verify(backupService, never()).backupUserRepositories(anyString());
         verify(usageReporting, never()).backupCompleted();
