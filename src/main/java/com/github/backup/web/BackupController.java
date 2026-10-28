@@ -3,11 +3,14 @@ package com.github.backup.web;
 import com.github.backup.BackupService;
 import com.github.backup.UsageReportingService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Comparator;
 
 /**
  * REST controller for backup management operations.
@@ -39,6 +42,17 @@ public class BackupController {
             return ResponseEntity.status(500)
                     .body(new BackupResponse(false, "Error: " + e.getMessage()));
         }
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<BackupResponse> handleInvalidRequest(MethodArgumentNotValidException e) {
+        // A blank name also fails the format pattern; report it as missing rather than malformed
+        String message = e.getBindingResult().getFieldErrors().stream()
+                .sorted(Comparator.comparing((FieldError error) -> !"NotBlank".equals(error.getCode())))
+                .map(FieldError::getDefaultMessage)
+                .findFirst()
+                .orElse("Invalid request");
+        return ResponseEntity.badRequest().body(new BackupResponse(false, message));
     }
 
     @GetMapping("/status")

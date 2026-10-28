@@ -146,7 +146,10 @@ When running in web mode (`-Dspring.profiles.active=web`), the following REST en
 { "success": true, "message": "Backup completed successfully for octocat" }
 ```
 
-**Response (`400 Bad Request`):** returned when `userOrOrg` is missing, blank, or does not match the username format. The body is Spring Boot's default validation error structure rather than the `success`/`message` shape above.
+**Response (`400 Bad Request`):** returned when `userOrOrg` is missing, blank, or does not match the username format. No backup is started, and `message` gives the reason: `User or organization name is required` for a missing or blank name, `Invalid GitHub username format` otherwise.
+```json
+{ "success": false, "message": "Invalid GitHub username format" }
+```
 
 **Response (`500 Internal Server Error`):** returned when the backup itself fails, for example because the backup directory cannot be created.
 ```json
