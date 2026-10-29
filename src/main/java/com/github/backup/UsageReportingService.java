@@ -23,7 +23,8 @@ import java.nio.file.Paths;
  * <p>Two events are sent, both off the calling thread through the vendored
  * {@link TraceClient}: {@code startup} once per process and
  * {@code backup-completed} when a backup run finishes, each tagged with the
- * program version only. Nothing identifying is sent: no user or
+ * program version and a random installation ID ({@code install}) only. Nothing
+ * identifying is sent: no user or
  * organization names, no repository names, no counts, no paths, no hostnames.
  *
  * <p>Reporting is on by default and switched off with
@@ -137,7 +138,7 @@ public class UsageReportingService {
         client.report(STARTUP_EVENT);
     }
 
-    /** Reports that a backup run finished. Carries the version only, nothing about what was backed up. */
+    /** Reports that a backup run finished. Carries the version and installation ID only, nothing about what was backed up. */
     public void backupCompleted() {
         client.report(BACKUP_COMPLETED_EVENT);
     }
