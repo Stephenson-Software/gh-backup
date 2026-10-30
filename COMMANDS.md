@@ -154,7 +154,7 @@ java -jar target/gh-backup-2.0.0-SNAPSHOT-8-8-2026.jar octocat
 
 ### `TRACE_INSTALL_ID`
 
-**Description:** Pins the installation ID sent as the `install` tag of every usage event. When unset or blank, a random ID stored in `~/.config/gh-backup/trace-install-id` is used instead.  
+**Description:** Pins the installation ID sent as the `install` tag of every usage event. The value is trimmed; when it is unset, blank or longer than 255 characters, a random ID stored in `~/.config/gh-backup/trace-install-id` is used instead.  
 **Required:** No
 
 ## Web API Endpoints
