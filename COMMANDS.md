@@ -111,6 +111,15 @@ java -Dspring.profiles.active=daemon -Dbackup.scheduled.users=octocat -Dbackup.s
 java -Dspring.profiles.active=web -Dserver.port=9000 -jar target/gh-backup-2.0.0-SNAPSHOT-8-8-2026.jar
 ```
 
+### `-Dusage.reporting.enabled=<true|false>`
+
+**Description:** Turn usage reporting off with `false`. When on, a `startup` event and a `backup-completed` event, carrying only the program version and a random installation ID, are sent to the maintainers' trace service; see [`usage.reporting.enabled`](CONFIG.md#usagereportingenabled) for exactly what is sent and the other ways to opt out.  
+**Default:** `true`  
+**Example:**
+```bash
+java -Dusage.reporting.enabled=false -jar target/gh-backup-2.0.0-SNAPSHOT-8-8-2026.jar octocat
+```
+
 ## Environment Variables
 
 ### `GITHUB_TOKEN`
@@ -122,6 +131,31 @@ java -Dspring.profiles.active=web -Dserver.port=9000 -jar target/gh-backup-2.0.0
 export GITHUB_TOKEN=ghp_yourTokenHere
 java -jar target/gh-backup-2.0.0-SNAPSHOT-8-8-2026.jar octocat
 ```
+
+### `USAGE_REPORTING_ENABLED`
+
+**Description:** Set to `false` to turn usage reporting off, the same as `-Dusage.reporting.enabled=false`. Any other value, or leaving it unset or empty, leaves reporting on.  
+**Required:** No  
+**Example:**
+```bash
+export USAGE_REPORTING_ENABLED=false
+java -jar target/gh-backup-2.0.0-SNAPSHOT-8-8-2026.jar octocat
+```
+
+### `TRACE_USAGE_REPORTING` and `DO_NOT_TRACK`
+
+**Description:** The opt-outs every trace client honours, checked before gh-backup's own setting. `TRACE_USAGE_REPORTING=off` (also `false`, `0`, `no`) or `DO_NOT_TRACK=1` (also `true`, `yes`) turns usage reporting off regardless of `usage.reporting.enabled`.  
+**Required:** No  
+**Example:**
+```bash
+export TRACE_USAGE_REPORTING=off   # or: export DO_NOT_TRACK=1
+java -jar target/gh-backup-2.0.0-SNAPSHOT-8-8-2026.jar octocat
+```
+
+### `TRACE_INSTALL_ID`
+
+**Description:** Pins the installation ID sent as the `install` tag of every usage event. When unset or blank, a random ID stored in `~/.config/gh-backup/trace-install-id` is used instead.  
+**Required:** No
 
 ## Web API Endpoints
 
