@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- The Docker environment variables table in `CONFIG.md` no longer gives `USAGE_REPORTING_ENABLED` a default of `true` in the image: the `Dockerfile` does not set it, so it is unset in the image and the application's own default of `true` applies; the `true` comes from `docker-compose.yml`
 - `POST /api/backups` now answers a rejected `userOrOrg` with `400 Bad Request` and the usual `success`/`message` body, `message` being `User or organization name is required` or `Invalid GitHub username format`, so the web UI shows why the name was rejected instead of a bare "Failed to create backup."; previously the body was Spring Boot's default error structure, which carries no message
 - The last-updated time reported by the `status` command and `GET /api/backups/status` now moves forward when a backup re-fetches an existing repository, instead of staying at the time it was first cloned: a fetch writes only inside `.git/`, so the repository directory's modification time, which is the value reported, is now set to the time of each successful fetch
 - Interactive mode now exits cleanly, as if `exit` had been typed, when standard input ends before `exit`/`quit` (Ctrl-D, Ctrl-Z, or piped input without `exit`), instead of failing the run with `NoSuchElementException: No line found`
