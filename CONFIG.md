@@ -189,7 +189,7 @@ When the image built from the included `Dockerfile` is used, the container alway
 | `BACKUP_INTERVAL_MS` | `backup.scheduled.interval.ms` | *(empty)* | Delay between scheduled backups, in milliseconds. Passed to the application only when non-empty; when empty, the default of `86400000` (24 hours) from `application-daemon.properties` applies. |
 | `BACKUP_DIRECTORY` | `backup.directory` | `/backups` | Backup directory inside the container. |
 | `GITHUB_TOKEN` | *(read directly by the application)* | *(unset)* | GitHub personal access token, as described above. |
-| `USAGE_REPORTING_ENABLED` | `usage.reporting.enabled` *(read directly by the application)* | `true` | Set to `false` to stop the daemon reporting `startup` and `backup-completed` events to the trace service, as described above. |
+| `USAGE_REPORTING_ENABLED` | `usage.reporting.enabled` *(read directly by the application)* | *(unset)* | When unset, the application's default of `true` applies; `docker-compose.yml` passes `true` unless `.env` gives it a non-empty value. Set to `false` to stop the daemon reporting `startup` and `backup-completed` events to the trace service, as described above. |
 | `TRACE_USAGE_REPORTING` | *(read directly by the vendored trace client)* | *(unset)* | `off` (or `false`, `0`, `no`) stops reporting regardless of `USAGE_REPORTING_ENABLED`. |
 | `DO_NOT_TRACK` | *(read directly by the vendored trace client)* | *(unset)* | `1` (or `true`, `yes`) stops reporting too, per https://consoledonottrack.com. |
 | `TRACE_INSTALL_ID` | *(read directly by the application)* | *(unset)* | Pins the installation ID sent as the `install` tag. When unset, the ID file is kept inside the container, so a recreated container counts as a new installation. |
