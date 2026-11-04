@@ -44,6 +44,15 @@ Once in interactive mode, the following commands are available at the `>` prompt
 
 Commands are matched case-insensitively. An unrecognized command prints an error and returns to the prompt. Reaching the end of standard input (Ctrl-D on Linux/macOS, Ctrl-Z then Enter on Windows, or the end of piped input) ends the session the same way as `exit`.
 
+## Exit Status
+
+| Status | Meaning |
+|--------|---------|
+| `0` | Every user or organization was backed up, the usage message was printed, or an interactive session ended. A failure during an interactive session is reported at the prompt and does not change the status. |
+| `1` | At least one user or organization could not be backed up, or at least one of its repositories failed. The remaining users, organizations and repositories are still attempted, each failure is printed to standard error, and the run ends with `Backup completed with errors.` |
+
+Web and daemon modes run until stopped and do not use these statuses.
+
 ## JVM System Properties
 
 These are passed with `-D` before the `-jar` flag.
@@ -188,6 +197,11 @@ When running in web mode (`-Dspring.profiles.active=web`), the following REST en
 **Response (`500 Internal Server Error`):** returned when the backup itself fails, for example because the backup directory cannot be created.
 ```json
 { "success": false, "message": "Error: Failed to create backup directory '/backups/octocat'" }
+```
+
+The same response is returned when any repository fails to clone or fetch. The remaining repositories are still backed up first, and `message` names the ones that failed:
+```json
+{ "success": false, "message": "Error: Failed to back up 1 of 8 repositories for octocat: Hello-World" }
 ```
 
 ### GET /api/backups/status

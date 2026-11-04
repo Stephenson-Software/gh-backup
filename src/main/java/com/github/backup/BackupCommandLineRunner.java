@@ -1,6 +1,7 @@
 package com.github.backup;
 
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.ExitCodeGenerator;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -9,10 +10,13 @@ import java.util.Scanner;
 
 @Component
 @ConditionalOnProperty(name = "backup.mode", havingValue = "cli", matchIfMissing = true)
-public class BackupCommandLineRunner implements CommandLineRunner {
+public class BackupCommandLineRunner implements CommandLineRunner, ExitCodeGenerator {
+
+    static final int EXIT_BACKUP_FAILED = 1;
 
     private final BackupService backupService;
     private final UsageReportingService usageReporting;
+    private int exitCode = 0;
 
     public BackupCommandLineRunner(BackupService backupService, UsageReportingService usageReporting) {
         this.backupService = backupService;
@@ -47,11 +51,18 @@ public class BackupCommandLineRunner implements CommandLineRunner {
                 backupService.backupUserRepositories(userOrOrg.trim());
             } catch (Exception e) {
                 System.err.println("Error backing up " + userOrOrg + ": " + e.getMessage());
+                exitCode = EXIT_BACKUP_FAILED;
             }
         }
 
-        System.out.println("\nBackup completed!");
+        System.out.println(exitCode == 0 ? "\nBackup completed!" : "\nBackup completed with errors.");
         usageReporting.backupCompleted();
+    }
+
+    /** The process exit status: non-zero when a non-interactive run failed to back up a user or organization. */
+    @Override
+    public int getExitCode() {
+        return exitCode;
     }
 
     private void runInteractiveMode() {

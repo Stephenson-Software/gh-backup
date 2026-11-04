@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -153,12 +154,34 @@ class BackupServiceTest {
         when(gitHubService.getPublicRepositories("testuser"))
                 .thenReturn(Arrays.asList(mockRepo2, mockRepo1));
 
-        String output = captureStdout(() -> backupService.backupUserRepositories("testuser"));
+        AtomicReference<IOException> failure = new AtomicReference<>();
+        String output = captureStdout(() -> failure.set(assertThrows(IOException.class,
+                () -> backupService.backupUserRepositories("testuser"))));
 
         assertTrue(output.contains("Found 2 public repositories"), output);
         assertTrue(output.contains("⚠ Warning: 1 repository(ies) failed to backup:"), output);
         assertTrue(output.contains("  - repo2"), output);
         assertTrue(Files.isDirectory(tempDir.resolve("testuser").resolve("repo1").resolve(".git")));
+        assertEquals("Failed to back up 1 of 2 repositories for testuser: repo2", failure.get().getMessage());
+    }
+
+    @Test
+    void testBackupUserRepositories_AllRepositoriesFailing_AreAllNamed() throws Exception {
+        when(mockRepo1.getName()).thenReturn("repo1");
+        when(mockRepo1.getHttpTransportUrl())
+                .thenReturn(tempDir.resolve("does-not-exist-1").toUri().toString());
+        when(mockRepo2.getName()).thenReturn("repo2");
+        when(mockRepo2.getHttpTransportUrl())
+                .thenReturn(tempDir.resolve("does-not-exist-2").toUri().toString());
+        when(gitHubService.getPublicRepositories("testuser"))
+                .thenReturn(Arrays.asList(mockRepo1, mockRepo2));
+
+        AtomicReference<IOException> failure = new AtomicReference<>();
+        captureStdout(() -> failure.set(assertThrows(IOException.class,
+                () -> backupService.backupUserRepositories("testuser"))));
+
+        assertEquals("Failed to back up 2 of 2 repositories for testuser: repo1, repo2",
+                failure.get().getMessage());
     }
 
     @Test

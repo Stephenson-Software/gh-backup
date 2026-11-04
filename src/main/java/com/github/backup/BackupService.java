@@ -37,6 +37,14 @@ public class BackupService {
         this.backupDirectory = backupPath.toString();
     }
 
+    /**
+     * Backs up every public repository of a user or organization. A repository that
+     * fails does not stop the others; once all have been attempted, the failures are
+     * reported to the caller.
+     *
+     * @throws IOException if the repositories cannot be listed, the backup directory
+     *                     cannot be created, or any repository failed to back up
+     */
     public void backupUserRepositories(String userOrOrg) throws IOException {
         System.out.println("\nFetching repositories for: " + userOrOrg);
         
@@ -72,6 +80,8 @@ public class BackupService {
             for (String repoName : failedRepos) {
                 System.out.println("  - " + repoName);
             }
+            throw new IOException("Failed to back up " + failedRepos.size() + " of " + repositories.size()
+                    + " repositories for " + userOrOrg + ": " + String.join(", ", failedRepos));
         }
     }
 

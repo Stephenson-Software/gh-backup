@@ -79,6 +79,16 @@ Windows example:
 java -Dbackup.directory=C:\Backups\GitHub -jar target/gh-backup-2.0.0-SNAPSHOT-8-8-2026.jar octocat
 ```
 
+### Detecting a failed backup in a script
+
+A repository that fails does not stop the others, so a run always finishes what it can. When anything failed, the run ends with `Backup completed with errors.` and exits with status `1`, which a cron job or CI step can act on:
+
+```bash
+java -jar target/gh-backup-2.0.0-SNAPSHOT-8-8-2026.jar octocat || echo "gh-backup reported a failure" >&2
+```
+
+See [Exit Status](COMMANDS.md#exit-status) for details. In web mode the same failure is returned as `500 Internal Server Error` naming the failed repositories, and in daemon mode it is logged as an error.
+
 ### Using interactive mode
 
 Start in interactive mode for an on-screen menu, using either `-i` or the equivalent `--interactive`:
