@@ -122,6 +122,54 @@ class BackupCommandLineRunnerTest {
     }
 
     @Test
+    void testGetExitCode_SuccessfulRun() throws Exception {
+        runner.run("user1", "user2");
+
+        assertEquals(0, runner.getExitCode());
+        assertTrue(stdout().contains("Backup completed!"));
+    }
+
+    @Test
+    void testGetExitCode_FailedUser() throws Exception {
+        doThrow(new IOException("Test exception"))
+                .when(backupService).backupUserRepositories("erroruser");
+
+        runner.run("erroruser");
+
+        assertEquals(BackupCommandLineRunner.EXIT_BACKUP_FAILED, runner.getExitCode());
+        assertTrue(stdout().contains("Backup completed with errors."));
+        assertFalse(stdout().contains("Backup completed!"));
+    }
+
+    @Test
+    void testGetExitCode_LaterSuccessDoesNotClearAnEarlierFailure() throws Exception {
+        doThrow(new IOException("Test exception"))
+                .when(backupService).backupUserRepositories("erroruser");
+
+        runner.run("erroruser", "gooduser");
+
+        assertEquals(BackupCommandLineRunner.EXIT_BACKUP_FAILED, runner.getExitCode());
+    }
+
+    @Test
+    void testGetExitCode_NoArguments() throws Exception {
+        runner.run();
+
+        assertEquals(0, runner.getExitCode());
+    }
+
+    @Test
+    void testGetExitCode_InteractiveFailureIsReportedAtThePromptOnly() throws Exception {
+        doThrow(new IOException("Test exception"))
+                .when(backupService).backupUserRepositories("erroruser");
+        provideInput("backup erroruser\nexit\n");
+
+        runner.run("-i");
+
+        assertEquals(0, runner.getExitCode());
+    }
+
+    @Test
     void testRun_TrimsArguments() throws Exception {
         runner.run(" octocat ");
 
