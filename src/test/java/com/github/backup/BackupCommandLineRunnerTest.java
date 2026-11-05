@@ -177,13 +177,79 @@ class BackupCommandLineRunnerTest {
     }
 
     @Test
-    void testRun_InteractiveFlagNotFirst_TreatedAsUserName() throws Exception {
+    void testRun_InteractiveFlagNotFirst_RejectedAsUnknownOption() throws Exception {
         // The flag is only recognized as the first argument
         runner.run("octocat", "-i");
 
-        verify(backupService).backupUserRepositories("octocat");
-        verify(backupService).backupUserRepositories("-i");
+        verifyNoInteractions(backupService);
         assertFalse(stdout().contains("Interactive Mode"));
+        assertTrue(stderr().contains("Error: Unknown option: -i"));
+        assertEquals(BackupCommandLineRunner.EXIT_USAGE_ERROR, runner.getExitCode());
+    }
+
+    @Test
+    void testRun_ShortHelpFlag_PrintsUsage() throws Exception {
+        runner.run("-h");
+
+        assertTrue(stdout().contains("Usage: java -jar gh-backup.jar [options] <user/org1> [user/org2] ..."));
+        assertTrue(stdout().contains("-h, --help"));
+        verifyNoInteractions(backupService, usageReporting);
+        assertEquals(0, runner.getExitCode());
+    }
+
+    @Test
+    void testRun_LongHelpFlag_PrintsUsage() throws Exception {
+        runner.run("--help");
+
+        assertTrue(stdout().contains("Usage: java -jar gh-backup.jar [options] <user/org1> [user/org2] ..."));
+        verifyNoInteractions(backupService, usageReporting);
+        assertEquals(0, runner.getExitCode());
+    }
+
+    @Test
+    void testRun_HelpFlagAfterUser_PrintsUsageWithoutBackingUp() throws Exception {
+        runner.run("octocat", "--help");
+
+        assertTrue(stdout().contains("Usage: java -jar gh-backup.jar [options] <user/org1> [user/org2] ..."));
+        verifyNoInteractions(backupService, usageReporting);
+        assertEquals(0, runner.getExitCode());
+    }
+
+    @Test
+    void testRun_UnknownOption_PrintsErrorAndUsageWithoutBackingUp() throws Exception {
+        runner.run("--interactiv");
+
+        assertTrue(stderr().contains("Error: Unknown option: --interactiv"));
+        assertTrue(stderr().contains("Usage: java -jar gh-backup.jar [options] <user/org1> [user/org2] ..."));
+        verifyNoInteractions(backupService, usageReporting);
+        assertEquals(BackupCommandLineRunner.EXIT_USAGE_ERROR, runner.getExitCode());
+    }
+
+    @Test
+    void testRun_UnknownOptionAfterUsers_NothingIsBackedUp() throws Exception {
+        runner.run("octocat", "github", "-x");
+
+        verifyNoInteractions(backupService, usageReporting);
+        assertEquals(BackupCommandLineRunner.EXIT_USAGE_ERROR, runner.getExitCode());
+    }
+
+    @Test
+    void testRun_SpringPropertyArgument_IsNotTreatedAsUser() throws Exception {
+        runner.run("--backup.directory=/mnt/backups", "octocat");
+
+        verify(backupService).backupUserRepositories("octocat");
+        verifyNoMoreInteractions(backupService);
+        assertTrue(stdout().contains("Backing up repositories for: [octocat]"));
+        assertEquals(0, runner.getExitCode());
+    }
+
+    @Test
+    void testRun_OnlySpringPropertyArguments_PrintsUsage() throws Exception {
+        runner.run("--backup.directory=/mnt/backups");
+
+        assertTrue(stdout().contains("Usage: java -jar gh-backup.jar [options] <user/org1> [user/org2] ..."));
+        verifyNoInteractions(backupService, usageReporting);
+        assertEquals(0, runner.getExitCode());
     }
 
     @Test

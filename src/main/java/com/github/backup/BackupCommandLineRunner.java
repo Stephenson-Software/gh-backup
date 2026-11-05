@@ -5,7 +5,9 @@ import org.springframework.boot.ExitCodeGenerator;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 @Component
@@ -13,6 +15,7 @@ import java.util.Scanner;
 public class BackupCommandLineRunner implements CommandLineRunner, ExitCodeGenerator {
 
     static final int EXIT_BACKUP_FAILED = 1;
+    static final int EXIT_USAGE_ERROR = 2;
 
     private final BackupService backupService;
     private final UsageReportingService usageReporting;
@@ -31,24 +34,39 @@ public class BackupCommandLineRunner implements CommandLineRunner, ExitCodeGener
             return;
         }
 
-        if (args.length == 0) {
-            System.out.println("Usage: java -jar gh-backup.jar [options] <user/org1> [user/org2] ...");
-            System.out.println("\nOptions:");
-            System.out.println("  -i, --interactive    Start interactive mode");
-            System.out.println("\nExample: java -jar gh-backup.jar octocat github");
-            System.out.println("         java -jar gh-backup.jar -i");
-            System.out.println("\nOptional: Set GITHUB_TOKEN environment variable for authenticated access");
+        List<String> targets = new ArrayList<>();
+        for (String arg : args) {
+            String value = arg.trim();
+            if ("-h".equals(value) || "--help".equals(value)) {
+                printUsage(System.out);
+                return;
+            }
+            if (isSpringProperty(value)) {
+                continue;
+            }
+            if (value.startsWith("-")) {
+                // A GitHub name cannot start with a hyphen, so this can only be a mistyped option
+                System.err.println("Error: Unknown option: " + value);
+                printUsage(System.err);
+                exitCode = EXIT_USAGE_ERROR;
+                return;
+            }
+            targets.add(value);
+        }
+
+        if (targets.isEmpty()) {
+            printUsage(System.out);
             return;
         }
 
         System.out.println("GitHub Backup Tool");
         System.out.println("==================");
-        System.out.println("Backing up repositories for: " + Arrays.toString(args));
+        System.out.println("Backing up repositories for: " + targets);
         System.out.println();
 
-        for (String userOrOrg : args) {
+        for (String userOrOrg : targets) {
             try {
-                backupService.backupUserRepositories(userOrOrg.trim());
+                backupService.backupUserRepositories(userOrOrg);
             } catch (Exception e) {
                 System.err.println("Error backing up " + userOrOrg + ": " + e.getMessage());
                 exitCode = EXIT_BACKUP_FAILED;
@@ -59,10 +77,28 @@ public class BackupCommandLineRunner implements CommandLineRunner, ExitCodeGener
         usageReporting.backupCompleted();
     }
 
-    /** The process exit status: non-zero when a non-interactive run failed to back up a user or organization. */
+    /**
+     * The process exit status: non-zero when a non-interactive run failed to back up a
+     * user or organization, or was given an unknown option.
+     */
     @Override
     public int getExitCode() {
         return exitCode;
+    }
+
+    /** A {@code --name=value} argument sets a Spring property, which has already been applied by the time this runs. */
+    private static boolean isSpringProperty(String arg) {
+        return arg.startsWith("--") && arg.contains("=");
+    }
+
+    private static void printUsage(PrintStream out) {
+        out.println("Usage: java -jar gh-backup.jar [options] <user/org1> [user/org2] ...");
+        out.println("\nOptions:");
+        out.println("  -i, --interactive    Start interactive mode");
+        out.println("  -h, --help           Show this usage message");
+        out.println("\nExample: java -jar gh-backup.jar octocat github");
+        out.println("         java -jar gh-backup.jar -i");
+        out.println("\nOptional: Set GITHUB_TOKEN environment variable for authenticated access");
     }
 
     private void runInteractiveMode() {

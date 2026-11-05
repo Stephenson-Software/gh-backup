@@ -2,7 +2,7 @@
 
 Configuration is provided through Spring Boot property files and JVM system properties.
 
-The main configuration file is `src/main/resources/application.properties`. Values can be overridden at runtime with `-D<property>=<value>`.
+The main configuration file is `src/main/resources/application.properties`. Values can be overridden at runtime with `-D<property>=<value>` before `-jar`, or with `--<property>=<value>` after it (except `backup.progress.overwrite`, which is read only from `-D`).
 
 ---
 

@@ -69,6 +69,15 @@ class GhBackupApplicationTests {
         });
     }
 
+    @Test
+    void testExitStatus_UnknownOptionReachesSpringApplicationExit() {
+        contextRunner.run(context -> {
+            runQuietly(context.getBean(BackupCommandLineRunner.class), "--interactiv");
+
+            assertEquals(BackupCommandLineRunner.EXIT_USAGE_ERROR, SpringApplication.exit(context));
+        });
+    }
+
     private static void runQuietly(BackupCommandLineRunner runner, String... args) throws Exception {
         PrintStream originalOut = System.out;
         PrintStream originalErr = System.err;
