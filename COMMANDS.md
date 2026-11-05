@@ -23,12 +23,24 @@ java -jar target/gh-backup-2.0.0-SNAPSHOT-8-8-2026.jar octocat github spring-pro
 
 ### `-i`, `--interactive` – Interactive Mode
 
-**Description:** Start the tool in interactive mode, providing a prompt for issuing commands without restarting the application. Both forms are equivalent, and the flag is only recognized when it is the first argument.  
+**Description:** Start the tool in interactive mode, providing a prompt for issuing commands without restarting the application. Both forms are equivalent, and the flag is only recognized when it is the first argument; anywhere else it is an unknown option.  
 **Usage:**
 ```bash
 java -jar target/gh-backup-2.0.0-SNAPSHOT-8-8-2026.jar -i
 java -jar target/gh-backup-2.0.0-SNAPSHOT-8-8-2026.jar --interactive
 ```
+
+### `-h`, `--help` – Usage Message
+
+**Description:** Print the usage message and exit with status `0`. Nothing is backed up and GitHub is not contacted.  
+**Usage:**
+```bash
+java -jar target/gh-backup-2.0.0-SNAPSHOT-8-8-2026.jar --help
+```
+
+### Other Arguments Starting with a Hyphen
+
+An argument of the form `--<property>=<value>` sets a configuration property, the same as `-D<property>=<value>` (except `backup.progress.overwrite`, which is read only from `-D`), and is not treated as a user or organization. Any other argument starting with a hyphen is an unknown option, since GitHub names cannot start with one: the error and the usage message are printed to standard error, nothing is backed up, even for the other arguments given, and the run exits with status `2`.
 
 ### Interactive Mode Commands
 
@@ -50,6 +62,7 @@ Commands are matched case-insensitively. An unrecognized command prints an error
 |--------|---------|
 | `0` | Every user or organization was backed up, the usage message was printed, or an interactive session ended. A failure during an interactive session is reported at the prompt and does not change the status. |
 | `1` | At least one user or organization could not be backed up, or at least one of its repositories failed. The remaining users, organizations and repositories are still attempted, each failure is printed to standard error, and the run ends with `Backup completed with errors.` |
+| `2` | An unknown option was given. Nothing was backed up. |
 
 Web and daemon modes run until stopped and do not use these statuses.
 

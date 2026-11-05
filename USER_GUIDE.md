@@ -68,6 +68,14 @@ To create a token: GitHub Settings → Developer settings → Personal access to
 
 The token is validated on startup. If it is invalid or expired, a warning is printed and the tool falls back to anonymous access with the lower rate limit rather than failing.
 
+### Showing the usage message
+
+```bash
+java -jar target/gh-backup-2.0.0-SNAPSHOT-8-8-2026.jar --help
+```
+
+`-h` does the same. Any other argument starting with a hyphen that gh-backup does not recognize is reported as an unknown option, and the run backs up nothing and exits with status `2`.
+
 ### Using a custom backup directory
 
 ```bash
