@@ -66,7 +66,7 @@ java -jar target/gh-backup-2.0.0-SNAPSHOT-8-8-2026.jar octocat
 
 To create a token: GitHub Settings → Developer settings → Personal access tokens → Generate new token. The `public_repo` scope is sufficient for public repositories.
 
-The token is validated on startup. If it is invalid or expired, a warning is printed and the tool falls back to anonymous access with the lower rate limit rather than failing.
+The token is validated on startup. If GitHub rejects it as invalid or expired, a warning is printed and the tool falls back to anonymous access with the lower rate limit rather than failing. If the check cannot be completed for any other reason, such as a network failure or a GitHub error, a warning says so and the token is still used.
 
 ### Showing the usage message
 

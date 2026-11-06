@@ -170,7 +170,7 @@ java -jar target/gh-backup-2.0.0-SNAPSHOT-8-8-2026.jar octocat
 
 **Type:** string  
 **Default:** not set  
-**Description:** A GitHub personal access token used to authenticate GitHub API requests. When set, the rate limit increases from 60 to 5,000 requests per hour. Not set via `application.properties`; pass it as an environment variable.
+**Description:** A GitHub personal access token used to authenticate GitHub API requests. When set, the rate limit increases from 60 to 5,000 requests per hour. It is checked once at startup: a token GitHub rejects is dropped with a warning in favor of anonymous access, while a check that fails for any other reason (a network failure or GitHub error, say) prints a warning and keeps the token. Not set via `application.properties`; pass it as an environment variable.
 
 ```bash
 export GITHUB_TOKEN=ghp_yourTokenHere
