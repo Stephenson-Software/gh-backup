@@ -146,7 +146,7 @@ class GitHubServiceTest {
     }
 
     @Test
-    void testGetPublicRepositories_FailureNamingADigitsUserIsNotReportedAsNotFound() throws IOException {
+    void testGetPublicRepositories_FailureWhoseUrlContains404IsNotReportedAsNotFound() throws IOException {
         // A connection failure's message carries the URL, and so the name being looked up
         IOException connectionFailed = new HttpException(
                 "Server returned HTTP response code: -1, message: 'null' for URL: https://api.github.com/users/team404",
