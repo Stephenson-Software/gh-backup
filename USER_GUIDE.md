@@ -166,3 +166,9 @@ Each subdirectory is a full Git repository. If a repository already exists on di
 | Authenticated (token) | 5,000 requests per hour |
 
 Using a GitHub token is strongly recommended when backing up users or organizations with many repositories.
+
+Cloning and fetching do not count against these limits; the GitHub API requests that check the token and list a user's or organization's repositories do. When the limit is reached, gh-backup prints a notice with the time it expects the limit to reset, waits, which can take up to an hour, and then continues by itself, so the run does not fail:
+
+```
+GitHub API rate limit reached. Waiting until about 2026-01-10 13:05:12; the backup will then continue by itself. Setting GITHUB_TOKEN raises the limit.
+```

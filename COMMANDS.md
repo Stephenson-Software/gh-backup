@@ -202,6 +202,8 @@ When running in web mode (`-Dspring.profiles.active=web`), the following REST en
 { "success": true, "message": "Backup completed successfully for octocat" }
 ```
 
+The response is sent when the backup finishes. If the GitHub rate limit is reached, the request stays open while gh-backup waits for it to reset, which can take up to an hour; see [Rate Limits](USER_GUIDE.md#rate-limits).
+
 **Response (`400 Bad Request`):** returned when `userOrOrg` is missing, blank, or does not match the username format. No backup is started, and `message` gives the reason: `User or organization name is required` for a missing or blank name, `Invalid GitHub username format` otherwise.
 ```json
 { "success": false, "message": "Invalid GitHub username format" }
