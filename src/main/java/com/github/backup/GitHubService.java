@@ -30,7 +30,10 @@ public class GitHubService {
             return connectAnonymously();
         }
 
-        GitHub authenticated = new GitHubBuilder().withOAuthToken(token).build();
+        GitHub authenticated = new GitHubBuilder()
+                .withOAuthToken(token)
+                .withRateLimitHandler(new RateLimitNoticeHandler(true))
+                .build();
         try {
             // Validate that the provided token is valid and has access
             authenticated.getMyself();
@@ -49,7 +52,9 @@ public class GitHubService {
     }
 
     private static GitHub connectAnonymously() throws IOException {
-        GitHub anonymous = GitHub.connectAnonymously();
+        GitHub anonymous = new GitHubBuilder()
+                .withRateLimitHandler(new RateLimitNoticeHandler(false))
+                .build();
         System.out.println("Connected to GitHub anonymously (rate limits apply)");
         return anonymous;
     }
@@ -77,8 +82,9 @@ public class GitHubService {
                     .filter(repo -> !repo.isPrivate())
                     .collect(Collectors.toList());
         } catch (FileNotFoundException notFound) {
-            // github-api raises this for a 404; any other failure (rate limit, network, etc.)
-            // propagates with its original error
+            // github-api raises this for a 404; any other failure (network, GitHub error, etc.)
+            // propagates with its original error. A rate limit is not a failure: the client
+            // waits for it to reset and retries, see RateLimitNoticeHandler
             throw new IOException(
                 "'" + userOrOrg + "' not found as GitHub organization or user. " +
                 "Please verify the name is correct.",

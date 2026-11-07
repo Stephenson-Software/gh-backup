@@ -9,11 +9,11 @@ import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GHUser;
 import org.kohsuke.github.GitHub;
 import org.kohsuke.github.GitHubBuilder;
+import org.kohsuke.github.GitHubRateLimitHandler;
 import org.kohsuke.github.HttpException;
 import org.kohsuke.github.PagedIterable;
 import org.mockito.Mock;
 import org.mockito.MockedConstruction;
-import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 
 import java.io.ByteArrayOutputStream;
@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -212,6 +213,32 @@ class GitHubServiceTest {
         verifyNoInteractions(authenticatedGithub);
     }
 
+    @Test
+    void testGitHubService_AnonymousClientAnnouncesRateLimitWait() throws IOException {
+        CapturedConstruction result = constructWithToken("");
+
+        assertEquals(1, result.builders.size());
+        verify(result.builders.get(0)).withRateLimitHandler(any(RateLimitNoticeHandler.class));
+    }
+
+    @Test
+    void testGitHubService_TokenClientAnnouncesRateLimitWait() throws IOException {
+        CapturedConstruction result = constructWithToken("valid-token");
+
+        assertEquals(1, result.builders.size());
+        verify(result.builders.get(0)).withRateLimitHandler(any(RateLimitNoticeHandler.class));
+    }
+
+    @Test
+    void testGitHubService_FallbackAfterRejectedTokenAnnouncesRateLimitWait() throws IOException {
+        when(authenticatedGithub.getMyself()).thenThrow(httpFailure(401));
+
+        CapturedConstruction result = constructWithToken("rejected-token");
+
+        assertEquals(2, result.builders.size());
+        verify(result.builders.get(1)).withRateLimitHandler(any(RateLimitNoticeHandler.class));
+    }
+
     private void assertTokenKeptAfter(IOException failure) throws IOException {
         when(authenticatedGithub.getMyself()).thenThrow(failure);
         stubRepositoriesFor(authenticatedGithub);
@@ -241,21 +268,28 @@ class GitHubServiceTest {
         ByteArrayOutputStream errorOutput = new ByteArrayOutputStream();
         PrintStream originalError = System.err;
         System.setErr(new PrintStream(errorOutput, true));
-        try (MockedStatic<GitHub> gitHubStatic = mockStatic(GitHub.class);
-             MockedConstruction<GitHubBuilder> builders = mockConstruction(GitHubBuilder.class,
-                     (builder, context) -> {
-                         when(builder.withOAuthToken(anyString())).thenReturn(builder);
-                         when(builder.build()).thenReturn(authenticatedGithub);
-                     })) {
-            gitHubStatic.when(GitHub::connectAnonymously).thenReturn(github);
+        try (MockedConstruction<GitHubBuilder> builders = mockBuilders(github, authenticatedGithub)) {
             GitHubService service = new GitHubService(token);
-            return new CapturedConstruction(service, errorOutput.toString());
+            return new CapturedConstruction(service, errorOutput.toString(), List.copyOf(builders.constructed()));
         } finally {
             System.setErr(originalError);
         }
     }
 
-    private record CapturedConstruction(GitHubService service, String errorOutput) {
+    /** Mocks GitHubBuilder so a builder given a token builds one client and any other builder the other. */
+    private static MockedConstruction<GitHubBuilder> mockBuilders(GitHub anonymousClient, GitHub tokenClient) {
+        return mockConstruction(GitHubBuilder.class, (builder, context) -> {
+            AtomicReference<GitHub> client = new AtomicReference<>(anonymousClient);
+            when(builder.withRateLimitHandler(any(GitHubRateLimitHandler.class))).thenReturn(builder);
+            when(builder.withOAuthToken(anyString())).thenAnswer(call -> {
+                client.set(tokenClient);
+                return builder;
+            });
+            when(builder.build()).thenAnswer(call -> client.get());
+        });
+    }
+
+    private record CapturedConstruction(GitHubService service, String errorOutput, List<GitHubBuilder> builders) {
     }
 
     /**
@@ -263,13 +297,7 @@ class GitHubServiceTest {
      * construction path (anonymous or GITHUB_TOKEN) the current environment takes.
      */
     private GitHubService newServiceBackedBy(GitHub client) throws IOException {
-        try (MockedStatic<GitHub> gitHubStatic = mockStatic(GitHub.class);
-             MockedConstruction<GitHubBuilder> builders = mockConstruction(GitHubBuilder.class,
-                     (builder, context) -> {
-                         when(builder.withOAuthToken(anyString())).thenReturn(builder);
-                         when(builder.build()).thenReturn(client);
-                     })) {
-            gitHubStatic.when(GitHub::connectAnonymously).thenReturn(client);
+        try (MockedConstruction<GitHubBuilder> builders = mockBuilders(client, client)) {
             return new GitHubService();
         }
     }
