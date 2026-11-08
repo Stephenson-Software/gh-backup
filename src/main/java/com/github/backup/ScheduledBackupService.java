@@ -8,7 +8,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -82,7 +81,8 @@ public class ScheduledBackupService {
         for (String userOrOrg : scheduledUsers) {
             try {
                 backupService.backupUserRepositories(userOrOrg);
-            } catch (IOException e) {
+            } catch (Exception e) {
+                // Any failure, checked or not, is this user's alone; the others still run
                 log.error("Error backing up {}: {}", userOrOrg, e.getMessage());
             }
         }

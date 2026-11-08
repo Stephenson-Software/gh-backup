@@ -235,6 +235,28 @@ class ScheduledBackupServiceTest {
     }
 
     @Test
+    void testRunScheduledBackup_UncheckedExceptionDoesNotStopRemainingUsers() throws IOException {
+        scheduledBackupService = new ScheduledBackupService(backupService, usageReporting, "octocat,github", DEFAULT_INTERVAL);
+
+        doThrow(new IllegalStateException("Listing interrupted")).when(backupService).backupUserRepositories("octocat");
+
+        assertDoesNotThrow(() -> scheduledBackupService.runScheduledBackup());
+
+        // The failure is logged like any other, and the rest of the run still happens
+        List<ILoggingEvent> logsList = logAppender.list;
+        assertTrue(logsList.stream().anyMatch(event ->
+            event.getLevel() == Level.ERROR &&
+            event.getFormattedMessage().contains("Error backing up octocat") &&
+            event.getFormattedMessage().contains("Listing interrupted")),
+            "Should log error with user name and error message");
+        assertTrue(logsList.stream().anyMatch(event ->
+            event.getFormattedMessage().contains("Scheduled backup completed")),
+            "Should log when backup completes");
+        verify(backupService, times(1)).backupUserRepositories("github");
+        verify(usageReporting, times(1)).backupCompleted();
+    }
+
+    @Test
     void testRunScheduledBackup_WithNoUsers_NoLogsGenerated() {
         scheduledBackupService = new ScheduledBackupService(backupService, usageReporting, "", DEFAULT_INTERVAL);
         
