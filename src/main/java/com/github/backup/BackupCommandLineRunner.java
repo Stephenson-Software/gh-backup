@@ -139,13 +139,15 @@ public class BackupCommandLineRunner implements CommandLineRunner, ExitCodeGener
                 case "backup":
                     if (parts.length < 2) {
                         System.out.println("Error: Please specify a user or organization");
-                        System.out.println("Usage: backup <user/org>");
+                        System.out.println("Usage: backup <user/org> [user/org2] ...");
                     } else {
-                        String userOrOrg = parts[1].trim();
-                        try {
-                            backupService.backupUserRepositories(userOrOrg);
-                        } catch (Exception e) {
-                            System.err.println("Error backing up " + userOrOrg + ": " + e.getMessage());
+                        // Several names are backed up one after another, as on the command line
+                        for (String userOrOrg : parts[1].trim().split("\\s+")) {
+                            try {
+                                backupService.backupUserRepositories(userOrOrg);
+                            } catch (Exception e) {
+                                System.err.println("Error backing up " + userOrOrg + ": " + e.getMessage());
+                            }
                         }
                         usageReporting.backupCompleted();
                     }

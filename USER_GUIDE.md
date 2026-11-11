@@ -109,7 +109,7 @@ Available interactive commands:
 
 | Command | Description |
 |---------|-------------|
-| `backup <user/org>` | Back up all public repositories for the specified user or organization |
+| `backup <user/org> [user/org2] ...` | Back up all public repositories for each specified user or organization, as on the command line (for example, `backup octocat github`) |
 | `status` | Show the backup directory, number of users/organizations, and a list of all backed up repositories |
 | `help` | Show the list of available interactive commands |
 | `exit` | Quit the interactive session |
