@@ -48,7 +48,7 @@ Once in interactive mode, the following commands are available at the `>` prompt
 
 | Command | Description |
 |---------|-------------|
-| `backup <user/org>` | Back up all public repositories for the given GitHub user or organization |
+| `backup <user/org> [user/org2] ...` | Back up all public repositories for each GitHub user or organization given, one after another. Names are separated by spaces or tabs; one that fails is reported and the rest are still backed up |
 | `status` | Display the backup directory path and a summary of all backed-up repositories |
 | `help` | Show the list of available interactive commands |
 | `exit` | Exit interactive mode and terminate the application |

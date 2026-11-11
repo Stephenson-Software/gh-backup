@@ -322,13 +322,40 @@ class BackupCommandLineRunnerTest {
     }
 
     @Test
+    void testRun_InteractiveMode_BackupSeveralNames_EachBackedUpSeparately() throws Exception {
+        provideInput("backup octocat   github\texit-user\nexit\n");
+
+        runner.run("-i");
+
+        verify(backupService).backupUserRepositories("octocat");
+        verify(backupService).backupUserRepositories("github");
+        verify(backupService).backupUserRepositories("exit-user");
+        verify(backupService, never()).backupUserRepositories("octocat   github\texit-user");
+        // One command is one backup run, however many names it lists
+        verify(usageReporting, times(1)).backupCompleted();
+    }
+
+    @Test
+    void testRun_InteractiveMode_BackupSeveralNames_FailureDoesNotStopTheOthers() throws Exception {
+        doThrow(new IOException("Test exception"))
+                .when(backupService).backupUserRepositories("erroruser");
+        provideInput("backup erroruser gooduser\nexit\n");
+
+        runner.run("-i");
+
+        assertTrue(stderr().contains("Error backing up erroruser: Test exception"));
+        verify(backupService).backupUserRepositories("gooduser");
+        verify(usageReporting, times(1)).backupCompleted();
+    }
+
+    @Test
     void testRun_InteractiveMode_BackupWithoutTarget() throws Exception {
         provideInput("backup\nexit\n");
 
         runner.run("-i");
 
         assertTrue(stdout().contains("Error: Please specify a user or organization"));
-        assertTrue(stdout().contains("Usage: backup <user/org>"));
+        assertTrue(stdout().contains("Usage: backup <user/org> [user/org2] ..."));
         verifyNoInteractions(backupService, usageReporting);
     }
 
