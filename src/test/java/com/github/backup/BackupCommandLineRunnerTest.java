@@ -390,8 +390,30 @@ class BackupCommandLineRunnerTest {
         runner.run("-i");
 
         assertTrue(stdout().contains("Available Commands:"));
-        assertTrue(stdout().contains("  help               - Show this help message"));
+        assertTrue(stdout().contains("  help                               - Show this help message"));
         verifyNoInteractions(backupService);
+    }
+
+    @Test
+    void testRun_InteractiveMode_StartBannerListsBackupOfSeveralNames() throws Exception {
+        provideInput("exit\n");
+
+        runner.run("-i");
+
+        assertTrue(stdout().contains(
+                "  backup <user/org> [user/org2] ...  - Backup repositories for each user or organization"));
+    }
+
+    @Test
+    void testRun_InteractiveMode_HelpCommandListsBackupOfSeveralNames() throws Exception {
+        provideInput("help\nexit\n");
+
+        runner.run("-i");
+
+        // Only the help output, not the start banner, which lists the same commands
+        String help = stdout().substring(stdout().indexOf("Available Commands:"));
+        assertTrue(help.contains(
+                "  backup <user/org> [user/org2] ...  - Backup repositories for each user or organization"));
     }
 
     @Test

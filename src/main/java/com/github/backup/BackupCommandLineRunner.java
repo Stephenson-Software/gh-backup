@@ -106,10 +106,10 @@ public class BackupCommandLineRunner implements CommandLineRunner, ExitCodeGener
         System.out.println("=====================================");
         System.out.println();
         System.out.println("Commands:");
-        System.out.println("  backup <user/org>  - Backup repositories for a user or organization");
-        System.out.println("  status             - View current backup status");
-        System.out.println("  help               - Show available commands");
-        System.out.println("  exit               - Exit interactive mode");
+        System.out.println("  backup <user/org> [user/org2] ...  - Backup repositories for each user or organization");
+        System.out.println("  status                             - View current backup status");
+        System.out.println("  help                               - Show available commands");
+        System.out.println("  exit                               - Exit interactive mode");
         System.out.println();
         
         @SuppressWarnings("resource") // Scanner wraps System.in, which should not be closed
@@ -159,10 +159,10 @@ public class BackupCommandLineRunner implements CommandLineRunner, ExitCodeGener
 
                 case "help":
                     System.out.println("\nAvailable Commands:");
-                    System.out.println("  backup <user/org>  - Backup repositories for a user or organization");
-                    System.out.println("  status             - View current backup status");
-                    System.out.println("  help               - Show this help message");
-                    System.out.println("  exit               - Exit interactive mode");
+                    System.out.println("  backup <user/org> [user/org2] ...  - Backup repositories for each user or organization");
+                    System.out.println("  status                             - View current backup status");
+                    System.out.println("  help                               - Show this help message");
+                    System.out.println("  exit                               - Exit interactive mode");
                     System.out.println();
                     break;
 
