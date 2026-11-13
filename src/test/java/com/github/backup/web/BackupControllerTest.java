@@ -68,6 +68,21 @@ class BackupControllerTest {
     }
 
     @Test
+    void createBackup_UncheckedFailure() throws Exception {
+        doThrow(new IllegalStateException("Unchecked test error")).when(backupService).backupUserRepositories(anyString());
+
+        mockMvc.perform(post("/api/backups")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"userOrOrg\":\"testuser\"}"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Error: Unchecked test error"));
+
+        verify(backupService, times(1)).backupUserRepositories("testuser");
+        verify(usageReporting, never()).backupCompleted();
+    }
+
+    @Test
     void createBackup_Success_ReportsBackupCompleted() throws Exception {
         mockMvc.perform(post("/api/backups")
                 .contentType(MediaType.APPLICATION_JSON)

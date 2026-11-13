@@ -8,7 +8,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
 
@@ -38,7 +37,8 @@ public class BackupController {
             backupService.backupUserRepositories(request.getUserOrOrg());
             usageReporting.backupCompleted();
             return ResponseEntity.ok(new BackupResponse(true, "Backup completed successfully for " + request.getUserOrOrg()));
-        } catch (IOException e) {
+        } catch (Exception e) {
+            // Unchecked failures too (a GHException from github-api, say), as the CLI and daemon handle them
             return ResponseEntity.status(500)
                     .body(new BackupResponse(false, "Error: " + e.getMessage()));
         }
