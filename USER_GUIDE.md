@@ -29,7 +29,7 @@ Start the web server:
 java -Dspring.profiles.active=web -jar target/gh-backup-2.0.0-SNAPSHOT-8-8-2026.jar
 ```
 
-Open `http://localhost:8080` in your browser to use the web interface.
+Open `http://localhost:8080` in your browser to use the web interface; see [Using the web interface](#using-the-web-interface) for what it offers.
 
 ### Quick Start – Daemon Mode
 
@@ -140,6 +140,13 @@ Total: 1 users/organizations, 8 repositories
 > exit
 Exiting interactive mode...
 ```
+
+### Using the web interface
+
+In web mode, the page at `http://localhost:8080` (or the port set with `-Dserver.port`) has two sections, both backed by the [Web API](COMMANDS.md#web-api-endpoints):
+
+- **Create New Backup** — enter one GitHub user or organization and select **Start Backup**. The button shows a spinner and stays disabled until the backup finishes, which can take a while for a large account, or up to an hour if the GitHub rate limit is reached (see [Rate Limits](#rate-limits)). The result appears below the form: on success, the server's message (for example, `Backup completed successfully for octocat`), after which the field is cleared and the status reloads; on failure, the server's error message, such as `Invalid GitHub username format` or the names of repositories that failed. To back up several accounts, submit them one at a time.
+- **Backup Status** — loaded when the page opens and again with the **Refresh** button. It shows the total number of users/organizations and repositories, followed by every backed-up repository with its last-updated time, the same information as the interactive `status` command. Three buttons switch between a list view, a card view, and a gallery view that shows every repository as a card colored by its user or organization, with a color key. The chosen view is remembered by the browser for the next visit. When nothing has been backed up yet, the section says so; when the status cannot be loaded, it shows `Failed to load status. Please check if the server is running.`
 
 ## Output Structure
 
