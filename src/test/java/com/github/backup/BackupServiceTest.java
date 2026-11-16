@@ -185,6 +185,33 @@ class BackupServiceTest {
     }
 
     @Test
+    void testBackupUserRepositories_ExistingDirectoryThatIsNotARepositoryFailsToUpdate() throws Exception {
+        Path notARepository = Files.createDirectories(tempDir.resolve("testuser").resolve("repo1"));
+        Path keptFile = Files.writeString(notARepository.resolve("notes.txt"), "kept");
+        Path source = createSourceRepository("source-repo2");
+        when(mockRepo1.getName()).thenReturn("repo1");
+        when(mockRepo2.getName()).thenReturn("repo2");
+        when(mockRepo2.getHttpTransportUrl()).thenReturn(source.toUri().toString());
+        when(gitHubService.getPublicRepositories("testuser"))
+                .thenReturn(Arrays.asList(mockRepo1, mockRepo2));
+
+        AtomicReference<IOException> failure = new AtomicReference<>();
+        AtomicReference<String> stdout = new AtomicReference<>();
+        String stderr = captureStderr(() -> stdout.set(captureStdout(() -> failure.set(assertThrows(
+                IOException.class, () -> backupService.backupUserRepositories("testuser"))))));
+
+        // The directory is neither cloned over nor fetched into; it is reported as a failed update
+        assertTrue(stderr.contains("  ✗ Failed to update: "), stderr);
+        assertTrue(stderr.contains("Failed to backup repo1: Failed to update repository"), stderr);
+        assertFalse(stdout.get().contains("(repository exists, updating)"), stdout.get());
+        verify(mockRepo1, never()).getHttpTransportUrl();
+        assertEquals("kept", Files.readString(keptFile));
+        assertFalse(Files.exists(notARepository.resolve(".git")));
+        assertTrue(Files.isDirectory(tempDir.resolve("testuser").resolve("repo2").resolve(".git")));
+        assertEquals("Failed to back up 1 of 2 repositories for testuser: repo1", failure.get().getMessage());
+    }
+
+    @Test
     void testBackupUserRepositories_BackupDirectoryCannotBeCreated() throws IOException {
         Path blocker = Files.createFile(tempDir.resolve("blocker"));
         BackupService service = new BackupService(gitHubService, blocker.toString());
@@ -223,6 +250,19 @@ class BackupServiceTest {
         
         // The service should convert relative paths to absolute
         assertDoesNotThrow(() -> service.showBackupStatus());
+    }
+
+    @Test
+    void testBackupDirectory_RelativePathIsResolvedAgainstWorkingDirectoryAndNormalized() {
+        String relative = "gh-backup-test-missing/../gh-backup-test-missing-" + System.nanoTime();
+        BackupService service = new BackupService(gitHubService, relative);
+        String expected = Path.of(relative).toAbsolutePath().normalize().toString();
+
+        String output = captureStdout(service::showBackupStatus);
+
+        assertEquals("No backups found. Backup directory does not exist: " + expected + System.lineSeparator(),
+                output);
+        assertFalse(output.contains(".."), output);
     }
 
     @Test
@@ -557,6 +597,20 @@ class BackupServiceTest {
             throw new AssertionError(e);
         } finally {
             System.setOut(original);
+        }
+        return buffer.toString(StandardCharsets.UTF_8);
+    }
+
+    private static String captureStderr(ThrowingRunnable action) {
+        PrintStream original = System.err;
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        System.setErr(new PrintStream(buffer, true, StandardCharsets.UTF_8));
+        try {
+            action.run();
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        } finally {
+            System.setErr(original);
         }
         return buffer.toString(StandardCharsets.UTF_8);
     }
