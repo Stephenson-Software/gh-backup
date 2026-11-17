@@ -22,6 +22,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Drives the usage-reporting wiring against a stub trace server on a loopback
@@ -197,6 +198,58 @@ class UsageReportingServiceTest {
         Path marker = UsageReportingService.defaultNoticeMarker();
         assertNotNull(marker);
         assertTrue(marker.endsWith(Path.of(".config", "gh-backup", UsageReportingService.NOTICE_MARKER_FILE)), marker.toString());
+    }
+
+    @Test
+    void onlyFalseTurnsReportingOffWhateverItsCaseOrSurroundingSpace() {
+        assertFalse(new UsageReportingService(" False ", endpoint(), "test-key", "1", marker()).isEnabled());
+        // COMMANDS.md: any value of USAGE_REPORTING_ENABLED other than false leaves reporting on
+        for (String other : new String[] {"no", "0", "off", "disabled", "true"}) {
+            assertTrue(new UsageReportingService(other, endpoint(), "test-key", "1", marker()).isEnabled(),
+                    "'" + other + "' should leave reporting on");
+        }
+    }
+
+    @Test
+    void versionIsTrimmedAndAMissingOneIsSentAsUnknown() {
+        assertEquals("2.0.0", UsageReportingService.versionOrUnknown("  2.0.0  "));
+        assertEquals(UsageReportingService.UNKNOWN_VERSION, UsageReportingService.versionOrUnknown(null));
+        assertEquals(UsageReportingService.UNKNOWN_VERSION, UsageReportingService.versionOrUnknown(""));
+        assertEquals(UsageReportingService.UNKNOWN_VERSION, UsageReportingService.versionOrUnknown("   "));
+        assertEquals(UsageReportingService.UNKNOWN_VERSION, UsageReportingService.versionOrUnknown(" @project.version@ "));
+    }
+
+    @Test
+    void installationIdFileIsKeptNextToTheNoticeMarkerAndAbsentWithoutOne() {
+        assertEquals(marker().resolveSibling("trace-install-id").toFile(), UsageReportingService.installIdFile(marker()));
+        assertNull(UsageReportingService.installIdFile(null));
+    }
+
+    @Test
+    void noDefaultMarkerWithoutAUsableHomeDirectory() {
+        String home = System.getProperty("user.home");
+        try {
+            System.setProperty("user.home", "   ");
+            assertNull(UsageReportingService.defaultNoticeMarker());
+            System.clearProperty("user.home");
+            assertNull(UsageReportingService.defaultNoticeMarker());
+        } finally {
+            System.setProperty("user.home", home);
+        }
+    }
+
+    @Test
+    void withoutAHomeDirectoryTheStartupEventIsStillSentButNoNoticeOrInstallationId() throws Exception {
+        assumeTrue(System.getenv("TRACE_INSTALL_ID") == null, "TRACE_INSTALL_ID would pin an ID");
+        UsageReportingService service = new UsageReportingService("true", endpoint(), "test-key", "2.0.0-TEST", null);
+        assertNull(service.installId(), "with nowhere to keep it, no installation ID is made up");
+
+        service.start();
+        assertTrue(arrived.await(5, TimeUnit.SECONDS), "startup event should arrive");
+        service.close();
+
+        assertEquals("{\"application\":\"gh-backup\",\"name\":\"startup\",\"tags\":{\"version\":\"2.0.0-TEST\"}}", bodies.get(0));
+        assertEquals(0, noticesLogged(), "with nowhere to record it, the notice is not shown");
     }
 
     private static byte[] readAll(InputStream in) throws java.io.IOException {
