@@ -239,7 +239,7 @@ class UsageReportingServiceTest {
     }
 
     @Test
-    void withoutAHomeDirectoryTheStartupEventIsStillSentButNoNoticeOrInstallationId() throws Exception {
+    void withoutAHomeDirectoryTheNoticeIsLoggedEveryRunAndNoInstallationIdIsMadeUp() throws Exception {
         assumeTrue(System.getenv("TRACE_INSTALL_ID") == null, "TRACE_INSTALL_ID would pin an ID");
         UsageReportingService service = new UsageReportingService("true", endpoint(), "test-key", "2.0.0-TEST", null);
         assertNull(service.installId(), "with nowhere to keep it, no installation ID is made up");
@@ -249,7 +249,20 @@ class UsageReportingServiceTest {
         service.close();
 
         assertEquals("{\"application\":\"gh-backup\",\"name\":\"startup\",\"tags\":{\"version\":\"2.0.0-TEST\"}}", bodies.get(0));
-        assertEquals(0, noticesLogged(), "with nowhere to record it, the notice is not shown");
+        assertEquals(1, noticesLogged(), "with nowhere to record it, the notice is still shown");
+
+        UsageReportingService second = new UsageReportingService("true", endpoint(), "test-key", "2.0.0-TEST", null);
+        second.start();
+        second.close();
+        assertEquals(2, noticesLogged(), "with nowhere to record it, the notice is shown again on the next run");
+    }
+
+    @Test
+    void disabledWithoutAHomeDirectoryShowsNoNotice() {
+        UsageReportingService service = new UsageReportingService("false", endpoint(), "test-key", "2.0.0-TEST", null);
+        service.start();
+        service.close();
+        assertEquals(0, noticesLogged());
     }
 
     private static byte[] readAll(InputStream in) throws java.io.IOException {
