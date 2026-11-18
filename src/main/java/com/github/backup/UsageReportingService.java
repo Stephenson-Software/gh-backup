@@ -35,8 +35,9 @@ import java.nio.file.Paths;
  * the client checks before anything this service passes it. The first time
  * reporting runs on a machine, one notice is logged saying so; a marker file
  * under the user's config directory ({@code ~/.config/gh-backup/}) keeps it
- * from being repeated. gh-backup has no settings file of its own, which is why
- * a marker file is used. Details:
+ * from being repeated. Without a usable home directory there is nowhere to keep
+ * the marker, so the notice is logged on every run instead. gh-backup has no
+ * settings file of its own, which is why a marker file is used. Details:
  * https://danielstephenson.dev/usage-reporting
  *
  * <p>Every path through this class is exception-safe: a bad endpoint, an
@@ -156,22 +157,28 @@ public class UsageReportingService {
 
     private void showFirstRunNoticeOnce() {
         if (noticeMarker == null) {
+            // Nowhere to record that it was shown, so it is shown every run rather than never.
+            logNotice();
             return;
         }
         try {
             if (Files.exists(noticeMarker)) {
                 return;
             }
-            log.info("Usage reporting is on: gh-backup sends its name, version and a random installation ID "
-                    + "with a startup event and a backup-completed event (nothing else) to "
-                    + "https://trace.danielstephenson.dev - nothing about accounts or repositories. Turn it off with "
-                    + "-Dusage.reporting.enabled=false, USAGE_REPORTING_ENABLED=false or "
-                    + "TRACE_USAGE_REPORTING=off. Details: " + DETAILS_URL);
+            logNotice();
             Files.createDirectories(noticeMarker.getParent());
             Files.writeString(noticeMarker, "The usage-reporting notice was shown once; delete this file to see it again.\n");
         } catch (IOException | RuntimeException cannotPersist) {
             // The notice is shown again next run; that is the worst case, and it is harmless.
             log.debug("Could not record that the usage-reporting notice was shown: {}", cannotPersist.getMessage());
         }
+    }
+
+    private static void logNotice() {
+        log.info("Usage reporting is on: gh-backup sends its name, version and a random installation ID "
+                + "with a startup event and a backup-completed event (nothing else) to "
+                + "https://trace.danielstephenson.dev - nothing about accounts or repositories. Turn it off with "
+                + "-Dusage.reporting.enabled=false, USAGE_REPORTING_ENABLED=false or "
+                + "TRACE_USAGE_REPORTING=off. Details: " + DETAILS_URL);
     }
 }
