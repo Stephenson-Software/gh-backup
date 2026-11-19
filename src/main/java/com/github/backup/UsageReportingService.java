@@ -32,7 +32,10 @@ import java.nio.file.Paths;
  * {@code application.properties}, or as {@code USAGE_REPORTING_ENABLED=false}
  * in the environment), or with the environment variables every trace client
  * honours, {@code TRACE_USAGE_REPORTING=off} and {@code DO_NOT_TRACK=1}, which
- * the client checks before anything this service passes it. The first time
+ * the client checks before anything this service passes it. Every switch fails
+ * closed: {@code usage.reporting.enabled} keeps reporting on only for
+ * {@code true}, {@code on}, {@code yes} or {@code 1}, and anything else --
+ * {@code off}, {@code no}, {@code 0}, blank, a typo -- turns it off. The first time
  * reporting runs on a machine, one notice is logged saying so; a marker file
  * under the user's config directory ({@code ~/.config/gh-backup/}) keeps it
  * from being repeated. Without a usable home directory there is nowhere to keep
@@ -95,8 +98,9 @@ public class UsageReportingService {
 
     private static TraceClient buildClient(String enabled, String endpoint, String key, String version,
                                            File installIdFile) {
-        // A blank value (an empty environment variable, say) means "default", i.e. on.
-        boolean on = enabled == null || enabled.isBlank() || !"false".equalsIgnoreCase(enabled.trim());
+        // Fails closed: only true, on, yes or 1 (any case) keeps reporting on. Anything else --
+        // false, off, no, 0, blank, a typo -- turns it off, so an opt-out is never read as on.
+        boolean on = TraceClient.allowsReporting(enabled);
         try {
             return TraceClient.builder(endpoint, APPLICATION, version)
                     .key(key)

@@ -63,6 +63,34 @@ class UsageReportingEnvironmentTest {
         service.close();
     }
 
+    @Test
+    void traceUsageReportingFailsClosedForAnyValueButAnOnValue() {
+        for (String value : new String[] {"false", "0", "no", "disabled", "nope"}) {
+            environment.put("TRACE_USAGE_REPORTING", value);
+            UsageReportingService service = newService();
+            assertFalse(service.isEnabled(), "TRACE_USAGE_REPORTING=" + value + " must switch reporting off");
+            service.close();
+        }
+    }
+
+    @Test
+    void doNotTrackFailsClosedForAnyValueButANegativeOne() {
+        for (String value : new String[] {"1", "true", "yes", "anything"}) {
+            environment.put("DO_NOT_TRACK", value);
+            UsageReportingService service = newService();
+            assertFalse(service.isEnabled(), "DO_NOT_TRACK=" + value + " must switch reporting off");
+            service.close();
+        }
+    }
+
+    @Test
+    void anOnTraceUsageReportingDoesNotOverrideTheProgramsOwnOff() {
+        environment.put("TRACE_USAGE_REPORTING", "on");
+        UsageReportingService service = new UsageReportingService("off", "http://127.0.0.1:9", "test-key", "1.0");
+        assertFalse(service.isEnabled(), "USAGE_REPORTING_ENABLED=off must still win over TRACE_USAGE_REPORTING=on");
+        service.close();
+    }
+
     private static UsageReportingService newService() {
         // Enabled, with a key, pointed at a port nothing listens on: nothing is sent either way.
         return new UsageReportingService("true", "http://127.0.0.1:9", "test-key", "1.0");

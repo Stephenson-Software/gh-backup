@@ -59,6 +59,8 @@ To turn it off, any one of these is enough:
 - `TRACE_USAGE_REPORTING=off` (also `false`, `0`, `no`) in the environment — the switch every trace client honours, checked before gh-backup's own setting
 - `DO_NOT_TRACK=1` (also `true`, `yes`) in the environment, per [consoledonottrack.com](https://consoledonottrack.com)
 
+Every switch fails closed, so an opt-out is never read as "on": `usage.reporting.enabled` / `USAGE_REPORTING_ENABLED` keeps reporting on only for `true`, `on`, `yes` or `1` (any case) and turns it off for anything else, blank or a typo included; `TRACE_USAGE_REPORTING` set to anything but blank or one of those values turns it off; `DO_NOT_TRACK` set to anything but blank, `0`, `false`, `off` or `no` turns it off.
+
 See [`usage.reporting.enabled`](CONFIG.md#usagereportingenabled) in the Configuration Guide, and for what trace collects and why: https://danielstephenson.dev/usage-reporting
 
 ## Contributing
