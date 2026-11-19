@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -61,17 +62,38 @@ public class UsageReportingService {
     static final String DETAILS_URL = "https://danielstephenson.dev/usage-reporting";
     /** Sent as the version when the build did not supply one. */
     static final String UNKNOWN_VERSION = "unknown";
+    /** The program's own switch, as Spring binds it. */
+    static final String SWITCH = "usage.reporting.enabled";
 
     private final TraceClient client;
     private final Path noticeMarker;
 
     @Autowired
     public UsageReportingService(
+            Environment environment,
             @Value("${usage.reporting.enabled:true}") String enabled,
             @Value("${usage.reporting.endpoint:https://trace.danielstephenson.dev}") String endpoint,
             @Value("${usage.reporting.key:}") String key,
             @Value("${spring.application.version:}") String version) {
+        this(switchOrNearMissOptOut(enabled, environment), endpoint, key, version, defaultNoticeMarker());
+    }
+
+    /** As above, reading only the switch itself (no near-miss check). */
+    public UsageReportingService(String enabled, String endpoint, String key, String version) {
         this(enabled, endpoint, key, version, defaultNoticeMarker());
+    }
+
+    /**
+     * The switch as Spring resolved it, or "false" when an opt-out is written under another name
+     * (see {@link NearMissOptOut}), which Spring would not bind to the switch at all.
+     */
+    static String switchOrNearMissOptOut(String enabled, Environment environment) {
+        String nearMiss = NearMissOptOut.find(environment, SWITCH);
+        if (nearMiss != null) {
+            log.debug("Usage reporting is off: {} is read as an opt-out.", nearMiss);
+            return "false";
+        }
+        return enabled;
     }
 
     UsageReportingService(String enabled, String endpoint, String key, String version, Path noticeMarker) {

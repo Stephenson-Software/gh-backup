@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- An opt-out written under another property name now counts as off. Spring binds only `usage.reporting.enabled` (and its relaxed forms, such as `USAGE_REPORTING_ENABLED`), so `usage-reporting.enabled=false`, `usage_reporting.enable=false`, `usage.reporting.disabled=true`, `usage.reporting=false` or `USAGE_REPORTING=off` used to be ignored and reporting stayed on. Any property naming usage reporting whose "enabled"-like key is not clearly on, whose "disabled"-like key is on, or which is given a value that is not clearly on, now turns reporting off.
 - Usage reporting now stays off once it is turned off. `usage.reporting.enabled` / `USAGE_REPORTING_ENABLED` used to turn reporting off only for `false`: `off`, `no`, `0`, a blank value or a typo all left it on. It now fails closed and is read through the trace client's `allowsReporting` helper: only `true`, `on`, `yes` or `1` (any case) keeps reporting on, and anything else turns it off. `docker-compose.yml` now passes a blank `USAGE_REPORTING_ENABLED` through as blank (off) instead of replacing it with `true`. The vendored `TraceClient` is now trace-client-java 0.8.0, whose `TRACE_USAGE_REPORTING` and `DO_NOT_TRACK` checks fail closed too: `TRACE_USAGE_REPORTING` set to anything but blank or `true`/`on`/`yes`/`1`, `DO_NOT_TRACK` set to anything but blank or `0`/`false`/`off`/`no`, or an environment that cannot be read, turns reporting off
 
 ### Added
