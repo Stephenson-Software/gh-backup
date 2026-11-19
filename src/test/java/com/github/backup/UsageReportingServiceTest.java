@@ -167,10 +167,13 @@ class UsageReportingServiceTest {
     }
 
     @Test
-    void blankEnabledValueMeansOnAndMissingKeyMeansOff() {
-        assertTrue(new UsageReportingService("", endpoint(), "test-key", "1", marker()).isEnabled(),
-                "an empty USAGE_REPORTING_ENABLED must not turn reporting off or crash");
-        assertTrue(new UsageReportingService(null, endpoint(), "test-key", "1", marker()).isEnabled());
+    void blankOrMissingEnabledValueMeansOffAndMissingKeyMeansOff() {
+        // Fails closed: an empty USAGE_REPORTING_ENABLED (the property itself defaults to true when
+        // the variable is unset) is not a clear "on", so it turns reporting off -- without crashing.
+        assertFalse(new UsageReportingService("", endpoint(), "test-key", "1", marker()).isEnabled(),
+                "an empty USAGE_REPORTING_ENABLED must turn reporting off, not crash");
+        assertFalse(new UsageReportingService("  ", endpoint(), "test-key", "1", marker()).isEnabled());
+        assertFalse(new UsageReportingService(null, endpoint(), "test-key", "1", marker()).isEnabled());
         assertFalse(new UsageReportingService("true", endpoint(), "", "1", marker()).isEnabled(),
                 "no key means nothing can be reported");
         assertFalse(new UsageReportingService("FALSE", endpoint(), "test-key", "1", marker()).isEnabled());
@@ -201,12 +204,17 @@ class UsageReportingServiceTest {
     }
 
     @Test
-    void onlyFalseTurnsReportingOffWhateverItsCaseOrSurroundingSpace() {
-        assertFalse(new UsageReportingService(" False ", endpoint(), "test-key", "1", marker()).isEnabled());
-        // COMMANDS.md: any value of USAGE_REPORTING_ENABLED other than false leaves reporting on
-        for (String other : new String[] {"no", "0", "off", "disabled", "true"}) {
-            assertTrue(new UsageReportingService(other, endpoint(), "test-key", "1", marker()).isEnabled(),
-                    "'" + other + "' should leave reporting on");
+    void onlyAClearOnValueKeepsReportingOnWhateverItsCaseOrSurroundingSpace() {
+        // COMMANDS.md: USAGE_REPORTING_ENABLED keeps reporting on only for true, on, yes or 1;
+        // anything else turns it off. Before, only "false" did, and "off", "no" and "0" left it on.
+        for (String off : new String[] {" False ", "false", "no", "0", "off", "OFF", "disabled", "flase", "\"false\""}) {
+            assertFalse(new UsageReportingService(off, endpoint(), "test-key", "1", marker()).isEnabled(),
+                    "'" + off + "' should turn reporting off");
+        }
+        for (String on : new String[] {"true", " TRUE ", "on", "yes", "1"}) {
+            UsageReportingService service = new UsageReportingService(on, endpoint(), "test-key", "1", marker());
+            assertTrue(service.isEnabled(), "'" + on + "' should leave reporting on");
+            service.close();
         }
     }
 

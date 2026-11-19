@@ -135,7 +135,7 @@ java -Dspring.profiles.active=web -Dserver.port=9000 -jar target/gh-backup-2.0.0
 
 ### `-Dusage.reporting.enabled=<true|false>`
 
-**Description:** Turn usage reporting off with `false`. When on, a `startup` event and a `backup-completed` event, carrying only the program version and a random installation ID, are sent to the maintainers' trace service; see [`usage.reporting.enabled`](CONFIG.md#usagereportingenabled) for exactly what is sent and the other ways to opt out.  
+**Description:** Turn usage reporting off with `false` (or anything but `true`, `on`, `yes` or `1`). When on, a `startup` event and a `backup-completed` event, carrying only the program version and a random installation ID, are sent to the maintainers' trace service; see [`usage.reporting.enabled`](CONFIG.md#usagereportingenabled) for exactly what is sent and the other ways to opt out.  
 **Default:** `true`  
 **Example:**
 ```bash
@@ -156,7 +156,7 @@ java -jar target/gh-backup-2.0.0-SNAPSHOT-8-8-2026.jar octocat
 
 ### `USAGE_REPORTING_ENABLED`
 
-**Description:** Set to `false` to turn usage reporting off, the same as `-Dusage.reporting.enabled=false`. Any other value, or leaving it unset or empty, leaves reporting on.  
+**Description:** Set to `false` to turn usage reporting off, the same as `-Dusage.reporting.enabled=false`. It fails closed: only `true`, `on`, `yes` or `1` (any case) keeps reporting on, and any other value — `off`, `no`, `0`, empty, a typo — turns it off. Leaving it unset leaves reporting on.  
 **Required:** No  
 **Example:**
 ```bash
@@ -166,7 +166,7 @@ java -jar target/gh-backup-2.0.0-SNAPSHOT-8-8-2026.jar octocat
 
 ### `TRACE_USAGE_REPORTING` and `DO_NOT_TRACK`
 
-**Description:** The opt-outs every trace client honours, checked before gh-backup's own setting. `TRACE_USAGE_REPORTING=off` (also `false`, `0`, `no`) or `DO_NOT_TRACK=1` (also `true`, `yes`) turns usage reporting off regardless of `usage.reporting.enabled`.  
+**Description:** The opt-outs every trace client honours, checked before gh-backup's own setting. `TRACE_USAGE_REPORTING=off` (or any value but blank, `true`, `on`, `yes` or `1`) or `DO_NOT_TRACK=1` (or any value but blank, `0`, `false`, `off` or `no`) turns usage reporting off regardless of `usage.reporting.enabled`.  
 **Required:** No  
 **Example:**
 ```bash

@@ -22,9 +22,11 @@ services:
       # Usage reporting to the maintainers' trace service (startup and
       # backup-completed events, nothing about what is backed up).
       # Set USAGE_REPORTING_ENABLED=false or TRACE_USAGE_REPORTING=off to turn
-      # it off (DO_NOT_TRACK=1 too); see CONFIG.md and
+      # it off (DO_NOT_TRACK=1 too). A blank USAGE_REPORTING_ENABLED is passed
+      # through as blank (not replaced by true), and anything but true/on/yes/1
+      # is read as off; see CONFIG.md and
       # https://danielstephenson.dev/usage-reporting
-      - USAGE_REPORTING_ENABLED=${USAGE_REPORTING_ENABLED:-true}
+      - USAGE_REPORTING_ENABLED=${USAGE_REPORTING_ENABLED-true}
       - TRACE_USAGE_REPORTING=${TRACE_USAGE_REPORTING:-}
       - DO_NOT_TRACK=${DO_NOT_TRACK:-}
 

@@ -32,7 +32,11 @@ class DockerComposeEnvironmentTest {
             if (matcher.find()) {
                 String name = matcher.group(1);
                 variables.add(name);
-                if (!compose.contains("- " + name + "=${" + name + ":-")) {
+                // ${NAME:-default} or ${NAME-default}; the latter passes an empty value through
+                // rather than replacing it, as USAGE_REPORTING_ENABLED does so that a blank
+                // value is read as off.
+                if (!compose.contains("- " + name + "=${" + name + ":-")
+                        && !compose.contains("- " + name + "=${" + name + "-")) {
                     missing.add(name);
                 }
             }
